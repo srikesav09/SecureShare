@@ -1,0 +1,100 @@
+{
+  "info": {
+    "_postman_id": "a8b0d5cc-f6db-4d30-9930-d65c086584a1",
+    "name": "SecureShare API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51822696"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET Health Check",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST Register",
+          "item": []
+        },
+        {
+          "name": "POST Login",
+          "item": []
+        },
+        {
+          "name": "POST refresh Token",
+          "item": []
+        },
+        {
+          "name": "POST Logout",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Profile",
+          "item": []
+        },
+        {
+          "name": "PUT Profile",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "POST Upload",
+          "item": []
+        },
+        {
+          "name": "GET Download",
+          "item": []
+        },
+        {
+          "name": "GET My Files",
+          "item": []
+        },
+        {
+          "name": "POST Share",
+          "item": []
+        },
+        {
+          "name": "DELETE file",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "GET Audit Logs",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Security",
+      "item": [
+        {
+          "name": "POST Verify Link",
+          "item": []
+        },
+        {
+          "name": "POST Revoke Link",
+          "item": []
+        }
+      ]
+    }
+  ]
+}
