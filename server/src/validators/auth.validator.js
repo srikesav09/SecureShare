@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const regiterSchema= z.object({
+export const registerSchema= z.object({
   name: z
   .string()
   .trim()
