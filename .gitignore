@@ -1,28 +1,32 @@
-# Dependencies
+# Node
 node_modules/
 
 # Environment Variables
 .env
 .env.*
-
-# Build Files
-dist/
-build/
+!.env.example
 
 # Logs
 logs
 *.log
-npm-debug.log*
 
 # OS Files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# VS Code
+# IDE
 .vscode/
+.idea/
+
+# Build
+dist/
+build/
 
 # Coverage
 coverage/
 
 # Misc
 *.local
+
+.postman/
