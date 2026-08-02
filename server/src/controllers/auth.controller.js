@@ -1,18 +1,7 @@
-import { registerUser } from "../services/auth.service.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const register = async (req, res) => {
-  try {
-    const result = await registerUser(req.body);
+export const register = asyncHandler(async (req, res) => {
+  const result = await registerUser(req.body);
 
-  res.status(200).json(result);
-  }catch (error){
-    return res.status(400).json({
-
-        success:false,
-
-        message:error.message
-
-    });
-  }
-};
-
+  return res.status(201).json(result);
+});
