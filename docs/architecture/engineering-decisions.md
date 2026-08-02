@@ -42,3 +42,19 @@ Bytes are the native unit for file systems and avoid repeated conversions. The f
 
 ### Status
 Accepted
+
+
+## ED-004
+
+### Decision
+Use bcrypt for password hashing.
+
+### Reason
+bcrypt automatically salts passwords, is intentionally slow to resist brute-force attacks, and is a widely adopted industry standard for password storage.
+
+### Alternatives Considered
+- SHA-256
+- PBKDF2
+
+### Status
+Accepted
