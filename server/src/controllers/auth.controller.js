@@ -1,4 +1,4 @@
-import { registerUser,loginUser } from "../services/auth.service.js";
+import { registerUser,loginUser, getProfile} from "../services/auth.service.js";
 
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -14,4 +14,10 @@ export const login = asyncHandler(async(req,res)=>{
             .status(200)
             .json(result);
 });
+
+export const profile = asyncHandler(async(req,res)=>{
+  const result = await getProfile(req.user.id);
+
+  return res.status(200).json(result);
+})
 

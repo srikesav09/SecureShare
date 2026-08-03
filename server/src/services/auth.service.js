@@ -64,3 +64,19 @@ export const loginUser = async (loginData) => {
   };
 
 }
+
+
+export const getProfile = async (userId) => {
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    throw new AppError(
+        "User not found",
+        404
+    );
+  }
+  return {
+    success: true,
+    message: "Profile fetched successfully",
+    data: user,
+};
+};

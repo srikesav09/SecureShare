@@ -15,7 +15,18 @@ export const authenticate = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = verifyToken(token);
-    req.user = decoded;
+
+    const user = await User.findById(decoded.id)
+    .select("-password");
+
+    if (!user) {
+      throw new AppError(
+        "User no longer exists",
+        401
+      );
+    }
+
+    req.user = user;
     next();
   } catch {
     throw new AppError("Invalid or expired token", 401);
