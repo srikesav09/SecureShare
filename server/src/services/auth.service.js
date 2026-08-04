@@ -78,5 +78,5 @@ export const getProfile = async (userId) => {
     success: true,
     message: "Profile fetched successfully",
     data: user,
-};
+  };
 };
