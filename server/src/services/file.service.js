@@ -25,3 +25,16 @@ export const saveFile = async (file, user) => {
         data: uploadedFile
     };
 };
+
+export const getFiles = async (userId) => {
+    const files = await File.find({
+        owner: userId
+    }).sort({
+        createdAt: -1
+    });
+    return {
+        success: true,
+        message: "Files fetched successfully",
+        data: files
+    };
+};
