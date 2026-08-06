@@ -1,5 +1,7 @@
 import multer from "multer";
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
 
 const uploadDir = "uploads";
 
@@ -13,7 +15,8 @@ const storage = multer.diskStorage({
   },
 
   filename(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const extension = path.extname(file.originalname);
+    cb(null, `${uuidv4()}${extension}`);
   },
 });
 
