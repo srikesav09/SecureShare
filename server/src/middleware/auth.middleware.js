@@ -1,7 +1,8 @@
 import AppError from "../utils/AppError.js";
 import { verifyToken } from "../utils/jwt.js";
+import User from "../models/user.model.js";
 
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (
     !authHeader ||
@@ -25,10 +26,17 @@ export const authenticate = (req, res, next) => {
         401
       );
     }
-
-    req.user = user;
+    req.user = {
+      id: user._id,
+      role: user.role,
+      email: user.email
+    };
     next();
-  } catch {
-    throw new AppError("Invalid or expired token", 401);
+  } catch(error) {
+    if (error instanceof AppError) {
+      return next(error);
+    }
+  
+    return next(new AppError(`Authentication failed: ${error.message}`, 401));
   }
 };
