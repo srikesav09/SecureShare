@@ -15,13 +15,20 @@ export const getMyFiles = asyncHandler(async (req, res) => {
 });
 
 export const downloadFile = asyncHandler(async (req, res) => {
-    const file = await downloadFileService(
-        req.params.id,
-        req.user.id
+    const result =await downloadFileService(
+      req.params.id,
+      req.user.id
     );
-    return res.download(
-        file.path,
-        file.originalName
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${result.metadata.originalName}"`
+    );
+    res.setHeader(
+      "Content-Type",
+      result.metadata.mimeType
+    );
+    res.send(
+      result.buffer
     );
 });
 

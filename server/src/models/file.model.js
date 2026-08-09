@@ -34,6 +34,18 @@ const fileSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    encrypted: {
+      type: Boolean,
+      default: true
+    },
+
+    iv: {
+        type: String
+    },
+
+    hash: {
+        type: String
+    }
   },
   {
     timestamps: true,

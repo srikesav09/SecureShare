@@ -1,7 +1,7 @@
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import fs from "fs";
-
+import { generateHash,encryptFile,decryptFile,generateHashFromBuffer } from "./encryption.service.js";
 export const saveFile = async (file, user) => {
 
     if (!file) {
@@ -12,13 +12,19 @@ export const saveFile = async (file, user) => {
         );
     }
 
+    const hash =generateHash(file.path);
+    const encryption =encryptFile(file.path);
+
     const uploadedFile = await File.create({
         originalName: file.originalname,
         storedName: file.filename,
         mimeType: file.mimetype,
         size: file.size,
-        path: file.path,
-        owner: user.id
+        path: encryption.encryptedPath,
+        owner: user.id,
+        iv:encryption.iv,
+        hash,
+        encrypted: true
     });
     return {
         success: true,
@@ -66,7 +72,26 @@ export const downloadFileService = async (
             404
         );
     }
-    return file;
+    const decrypted =decryptFile(
+          file.path,
+          file.iv
+      );
+
+    const currentHash =generateHashFromBuffer(decrypted);
+
+    if (
+        currentHash !==
+        file.hash
+    ){ 
+      throw new AppError(
+      "Integrity check failed",
+      500
+      );
+    }
+    return {
+      metadata:file,
+      buffer:decrypted
+    };
 };
 
 export const deleteFileService = async (
