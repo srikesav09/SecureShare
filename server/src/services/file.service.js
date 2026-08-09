@@ -68,3 +68,28 @@ export const downloadFileService = async (
     }
     return file;
 };
+
+export const deleteFileService = async (
+    fileId,
+    userId
+) => {
+
+    const file = await File.findById(fileId);
+    if (!file) {
+        throw new AppError("File not found", 404);
+    }
+    if (
+        file.owner.toString() !==
+        userId.toString()
+    ) {
+        throw new AppError("Access denied", 403);
+    }
+    if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+    }
+    await File.findByIdAndDelete(fileId);
+    return {
+        success: true,
+        message: "File deleted successfully"
+    };
+};

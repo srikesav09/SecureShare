@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { saveFile } from "../services/file.service.js";
 import { getFiles } from "../services/file.service.js";
+import { downloadFileService } from "../services/file.service.js";
+import { deleteFileService } from "../services/file.service.js";
 
 export const uploadFile = asyncHandler(async (req, res) => {
     const result = await saveFile(req.file, req.user);
@@ -21,4 +23,14 @@ export const downloadFile = asyncHandler(async (req, res) => {
         file.path,
         file.originalName
     );
+});
+
+export const deleteFile = asyncHandler(async (req, res) => {
+
+    const result = await deleteFileService(
+        req.params.id,
+        req.user.id
+    );
+    return res.status(200).json(result);
+
 });
