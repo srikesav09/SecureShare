@@ -1,5 +1,6 @@
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
+import fs from "fs";
 
 export const saveFile = async (file, user) => {
 
@@ -37,4 +38,33 @@ export const getFiles = async (userId) => {
         message: "Files fetched successfully",
         data: files
     };
+};
+
+export const downloadFileService = async (
+    fileId,
+    userId
+) => {
+    const file = await File.findById(fileId);
+    if (!file) {
+        throw new AppError(
+            "File not found",
+            404
+        );
+    }
+    if (
+        file.owner.toString() !==
+        userId.toString()
+    ) {
+        throw new AppError(
+            "Access denied",
+            403
+        );
+    }
+    if (!fs.existsSync(file.path)) {
+        throw new AppError(
+            "File not found on server",
+            404
+        );
+    }
+    return file;
 };
