@@ -3,6 +3,7 @@ import Share from "../models/share.model.js";
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import { configDotenv } from "dotenv";
+import { decryptFile, generateHashFromBuffer} from "./encryption.service.js";
 
 export const createShareLink = async (
   fileId,
@@ -49,8 +50,114 @@ export const createShareLink = async (
   });
   return {
     success:true,
+    shareId:Share._id,
     shareLink:
 `${process.env.APP_URL}/share/${token}`,
     expiresAt
   };
+};
+
+export const downloadSharedFileService =
+async(token)=>{
+
+  const hashedToken = crypto.createHash("sha256")
+  .update(token)
+  .digest("hex");
+
+  const share =
+  await Share.findOne({
+    token:hashedToken
+  });
+
+  if(!share){
+    throw new AppError(
+    "Invalid share link",
+    404
+    );
+  }
+
+  if(share.isRevoked){
+    throw new AppError(
+      "Share link revoked",
+      403
+    );
+  }
+
+  if(share.expiresAt < new Date()){
+    throw new AppError(
+    "Share link expired",
+    410
+    );
+
+  }
+
+  const file = await File.findById(
+    share.file
+  );
+
+  if(!file){
+
+    throw new AppError(
+    "File not found",
+    404
+    );
+
+  }
+
+  const buffer = decryptFile(
+    file.path,
+    file.iv
+  );
+
+  const hash =generateHashFromBuffer(buffer);
+
+  if(hash !== file.hash){
+    throw new AppError(
+      "Integrity check failed",
+      500
+    );
+  }
+
+  share.downloadCount++;
+  await share.save();
+
+  return{
+    metadata:file,
+    buffer
+  };
+
+};
+
+
+export const revokeShareLink = async (shareId, userId) => {
+    const share = await Share.findById(shareId);
+
+    if (!share) {
+        throw new AppError("Share link not found", 404);
+    }
+
+    if (!share.owner) {
+        throw new AppError("Share owner missing", 500);
+    }
+
+    if (!userId) {
+        throw new AppError("User not authenticated", 401);
+    }
+
+    if (String(share.owner) !== String(userId)) {
+        throw new AppError("Access denied", 403);
+    }
+
+    if (share.isRevoked) {
+        throw new AppError("Share link already revoked", 400);
+    }
+
+    share.isRevoked = true;
+
+    await share.save();
+
+    return {
+        success: true,
+        message: "Share link revoked successfully"
+    };
 };
