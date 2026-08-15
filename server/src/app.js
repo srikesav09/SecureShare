@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -16,6 +17,17 @@ app.use(cors());
 app.use(express.json());
 app.set("trust proxy", true);
 app.use(requestId);
+
+app.use(
+    helmet({
+        crossOriginResourcePolicy: {
+            policy: "cross-origin"
+        },
+        contentSecurityPolicy: false
+    })
+);
+
+app.disable("x-powered-by");
 
 app.use("/api/health",healthRoutes);
 app.use("/api/auth",authRoutes);
