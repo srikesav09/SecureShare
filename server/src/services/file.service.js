@@ -2,7 +2,10 @@ import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import fs from "fs";
 import { generateHash,encryptFile,decryptFile,generateHashFromBuffer } from "./encryption.service.js";
-export const saveFile = async (file, user) => {
+import { createAuditLog } from "./audit.service.js";
+import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js";
+
+export const saveFile = async (req,file, user) => {
 
     if (!file) {
 
@@ -26,6 +29,17 @@ export const saveFile = async (file, user) => {
         hash,
         encrypted: true
     });
+    await createAuditLog({
+        req,
+        user: user.id,
+        action: AUDIT_ACTIONS.UPLOAD_FILE,
+        resourceType: RESOURCE_TYPES.FILE,
+        resourceId: uploadedFile._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: uploadedFile.originalName
+        }
+    });
     return {
         success: true,
         message: "File uploaded successfully",
@@ -47,6 +61,7 @@ export const getFiles = async (userId) => {
 };
 
 export const downloadFileService = async (
+    req,
     fileId,
     userId
 ) => {
@@ -88,6 +103,18 @@ export const downloadFileService = async (
       500
       );
     }
+    await createAuditLog({
+        req,
+        user: userId,
+        action: AUDIT_ACTIONS.DOWNLOAD_FILE,
+        resourceType: RESOURCE_TYPES.FILE,
+        resourceId: file._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: file.originalName
+        }
+    });
+
     return {
       metadata:file,
       buffer:decrypted
@@ -95,6 +122,7 @@ export const downloadFileService = async (
 };
 
 export const deleteFileService = async (
+    req,
     fileId,
     userId
 ) => {
@@ -113,6 +141,19 @@ export const deleteFileService = async (
         fs.unlinkSync(file.path);
     }
     await File.findByIdAndDelete(fileId);
+    
+    await createAuditLog({
+        req,
+        user: userId,
+        action: AUDIT_ACTIONS.DELETE_FILE,
+        resourceType: RESOURCE_TYPES.FILE,
+        resourceId: file._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: file.originalName
+        }
+    });
+
     return {
         success: true,
         message: "File deleted successfully"

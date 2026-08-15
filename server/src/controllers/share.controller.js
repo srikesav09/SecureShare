@@ -6,8 +6,9 @@ export const shareFile = asyncHandler(
       async (req,res)=>{
 
         const result =await createShareLink(
-        req.params.fileId,
-        req.user.id
+          req,
+          req.params.fileId,
+          req.user.id
         );
 
       res.status(201).json(result);
@@ -18,6 +19,7 @@ export const downloadSharedFile =
   asyncHandler(async(req,res)=>{
 
     const result = await downloadSharedFileService(
+      req,
       req.params.token
     );
     res.setHeader(
@@ -39,6 +41,7 @@ export const downloadSharedFile =
 export const revokeShare = asyncHandler(async (req, res) => {
 
     const result = await revokeShareLink(
+        req,
         req.params.shareId,
         req.user.id
     );
