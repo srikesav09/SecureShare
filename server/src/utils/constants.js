@@ -20,3 +20,9 @@ export const AUDIT_STATUS = {
     SUCCESS: "SUCCESS",
     FAILED: "FAILED"
 };
+
+export const RESOURCE_TYPES = {
+    FILE: "FILE",
+    SHARE: "SHARE",
+    USER: "USER"
+};

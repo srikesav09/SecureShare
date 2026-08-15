@@ -28,6 +28,11 @@ const auditSchema = new mongoose.Schema(
             enum: ["SUCCESS", "FAILED"],
             required: true
         },
+        
+        requestId: {
+            type: String,
+            default: null
+        },
 
         ipAddress: {
             type: String

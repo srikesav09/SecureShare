@@ -5,9 +5,10 @@ import AppError from "../utils/AppError.js";
 import { configDotenv } from "dotenv";
 import { decryptFile, generateHashFromBuffer} from "./encryption.service.js";
 import { createAuditLog } from "./audit.service.js";
-import { AUDIT_ACTIONS,AUDIT_STATUS } from "../utils/constants.js";
+import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js";
 
 export const createShareLink = async (
+  req,
   fileId,
   userId
 ) => {
@@ -52,13 +53,14 @@ export const createShareLink = async (
   });
 
   await createAuditLog({
+    req,
     user: userId,
     action: AUDIT_ACTIONS.CREATE_SHARE,
-    resourceType: "SHARE",
+    resourceType: RESOURCE_TYPES.SHARE,
     resourceId: share._id,
     status: AUDIT_STATUS.SUCCESS,
     details: {
-        file: file.originalName
+        filename: file.originalName
     }
   });
 
@@ -72,7 +74,7 @@ export const createShareLink = async (
 };
 
 export const downloadSharedFileService =
-async(token)=>{
+async(req,token)=>{
 
   const hashedToken = crypto.createHash("sha256")
   .update(token)
@@ -85,6 +87,7 @@ async(token)=>{
 
   if(!share){
     await createAuditLog({
+      req,
       action: AUDIT_ACTIONS.INVALID_SHARE,
       status: AUDIT_STATUS.FAILED,
       details: {
@@ -106,6 +109,7 @@ async(token)=>{
 
   if(share.expiresAt < new Date()){
     await createAuditLog({
+      req,
       action: AUDIT_ACTIONS.INVALID_SHARE,
       status: AUDIT_STATUS.FAILED,
       details: {
@@ -147,9 +151,10 @@ async(token)=>{
   }
 
   await createAuditLog({
+    req,
     user: null,
     action: AUDIT_ACTIONS.DOWNLOAD_SHARE,
-    resourceType: "SHARE",
+    resourceType: RESOURCE_TYPES.SHARE,
     resourceId: share._id,
     status: AUDIT_STATUS.SUCCESS,
     details: {
@@ -169,7 +174,7 @@ async(token)=>{
 };
 
 
-export const revokeShareLink = async (shareId, userId) => {
+export const revokeShareLink = async (req,shareId, userId) => {
     const share = await Share.findById(shareId);
 
     if (!share) {
@@ -195,13 +200,15 @@ export const revokeShareLink = async (shareId, userId) => {
     share.isRevoked = true;
 
     await share.save();
+    
     await createAuditLog({
+      req,
       user: userId,
       action: AUDIT_ACTIONS.REVOKE_SHARE,
-      resourceType: "SHARE",
+      resourceType: RESOURCE_TYPES.SHARE,
       resourceId: share._id,
       status: AUDIT_STATUS.SUCCESS
-  });
+    });
 
     return {
         success: true,
