@@ -1,7 +1,7 @@
 import express from "express";
 
 import { authenticate } from "../middleware/auth.middleware.js";
-
+import { createShareLimiter } from "../middleware/rateLimiter.middleware.js";
 
 import {
     shareFile,
@@ -13,6 +13,7 @@ const router = express.Router();
 router.post(
     "/:fileId",
     authenticate,
+    createShareLimiter,
     shareFile
 );
 
