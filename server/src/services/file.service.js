@@ -2,6 +2,9 @@ import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import fs from "fs";
 import { generateHash,encryptFile,decryptFile,generateHashFromBuffer } from "./encryption.service.js";
+import { createAuditLog } from "./audit.service.js";
+import { AUDIT_ACTIONS,AUDIT_STATUS } from "../utils/constants.js";
+
 export const saveFile = async (file, user) => {
 
     if (!file) {
@@ -25,6 +28,17 @@ export const saveFile = async (file, user) => {
         iv:encryption.iv,
         hash,
         encrypted: true
+    });
+    await createAuditLog({
+        req,
+        user: user.id,
+        action: AUDIT_ACTIONS.UPLOAD_FILE,
+        resourceType: "FILE",
+        resourceId: uploadedFile._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: uploadedFile.originalName
+        }
     });
     return {
         success: true,
@@ -88,6 +102,18 @@ export const downloadFileService = async (
       500
       );
     }
+    await createAuditLog({
+
+        user: userId,
+        action: AUDIT_ACTIONS.DOWNLOAD_FILE,
+        resourceType: "FILE",
+        resourceId: file._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: file.originalName
+        }
+    });
+
     return {
       metadata:file,
       buffer:decrypted
@@ -113,6 +139,17 @@ export const deleteFileService = async (
         fs.unlinkSync(file.path);
     }
     await File.findByIdAndDelete(fileId);
+    await createAuditLog({
+        user: userId,
+        action: AUDIT_ACTIONS.DELETE_FILE,
+        resourceType: "FILE",
+        resourceId: file._id,
+        status: AUDIT_STATUS.SUCCESS,
+        details: {
+            filename: file.originalName
+        }
+    });
+
     return {
         success: true,
         message: "File deleted successfully"
