@@ -16,7 +16,6 @@ router.post(
     createShareLimiter,
     shareFile
 );
-
 router.delete(
     "/:shareId",
     authenticate,
