@@ -9,6 +9,7 @@ import fileRoutes from "./routes/file.routes.js";
 import shareRoutes from "./routes/share.routes.js";
 import publicRoutes from "./routes/public.routes.js"
 import { requestId } from "./middleware/requestId.middleware.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/auth",authRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/share", shareRoutes);
 app.use("/share", publicRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 

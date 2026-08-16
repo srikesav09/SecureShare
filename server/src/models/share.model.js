@@ -20,6 +20,11 @@ const shareSchema = new mongoose.Schema(
       unique: true,
     },
 
+    passwordHash: {
+      type: String,
+      default: null,
+    },
+
     expiresAt: {
       type: Date,
       required: true,
