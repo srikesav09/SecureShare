@@ -15,7 +15,12 @@ email: z
 password: z
 .string()
 .min(8, "Password must be at least 8 characters")
-.max(100)
+.max(100),
+
+role: z
+.enum(["USER", "ADMIN"])
+.optional()
+
 });
 
 export const loginSchema = z.object({
