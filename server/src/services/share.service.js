@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import bcrypt from "bcrypt";
+
 import Share from "../models/share.model.js";
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
@@ -11,8 +13,31 @@ export const createShareLink = async (
   req,
   fileId,
   userId,
-  maxDownloads = null
+  maxDownloads = null,
+  password = null
 ) => {
+
+  if (
+    password !== null &&
+    password !== undefined &&
+    typeof password !== "string"
+  ) {
+    throw new AppError(
+      "Password must be a string",
+      400
+    );
+  }
+
+  if (
+    password !== null &&
+    password !== undefined &&
+    password.length < 8
+  ) {
+    throw new AppError(
+      "Password must contain at least 8 characters",
+      400
+    );
+  }
 
   if (
     maxDownloads !== null &&
@@ -26,6 +51,8 @@ export const createShareLink = async (
           400
       );
   }
+
+  
 
   const file =await File.findById(fileId);
 
@@ -45,26 +72,31 @@ export const createShareLink = async (
       403
     );
   }
-  const token =
-    crypto.randomBytes(32)
-    .toString("hex");
+  const token = crypto.randomBytes(32).toString("hex");
 
-  const hashedToken =
-    crypto.createHash("sha256")
-      .update(token)
-      .digest("hex");
+  const hashedToken =crypto.createHash("sha256")
+                      .update(token)
+                      .digest("hex");
+
   const expiresAt =
     new Date(
       Date.now() +
       24 * 60 * 60 * 1000
     );
 
+    let passwordHash = null;
+
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 12);
+    }
+
   const share = await Share.create({
     file:file._id,
     owner:userId,
     token:hashedToken,
     expiresAt,
-    maxDownloads
+    maxDownloads,
+    passwordHash
   });
 
   await createAuditLog({
@@ -120,6 +152,56 @@ async(req,token)=>{
       "Share link revoked",
       403
     );
+  }
+
+  const password = req.headers["x-share-password"];
+
+  if (share.passwordHash) {
+
+    if (!password) {
+
+      await createAuditLog({
+        req,
+        user: null,
+        action: AUDIT_ACTIONS.PASSWORD_FAILED,
+        resourceType: RESOURCE_TYPES.SHARE,
+        resourceId: share._id,
+        status: AUDIT_STATUS.FAILED,
+        details: {
+          reason: "Password required"
+        }
+      });
+
+      throw new AppError(
+        "Share password required",
+        401
+      );
+    }
+
+    const passwordValid = await bcrypt.compare(
+      password,
+      share.passwordHash
+    );
+
+    if (!passwordValid) {
+
+      await createAuditLog({
+        req,
+        user: null,
+        action: AUDIT_ACTIONS.PASSWORD_FAILED,
+        resourceType: RESOURCE_TYPES.SHARE,
+        resourceId: share._id,
+        status: AUDIT_STATUS.FAILED,
+        details: {
+          reason: "Invalid password"
+        }
+      });
+
+      throw new AppError(
+        "Invalid share password",
+        403
+      );
+    }
   }
 
   if (share.maxDownloads !== null &&
@@ -189,7 +271,7 @@ async(req,token)=>{
       }
     },
     {
-      new: true
+      returnDocument: 'after'
     }
   );
 
