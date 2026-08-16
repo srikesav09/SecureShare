@@ -8,7 +8,8 @@ export const shareFile = asyncHandler(
         const result =await createShareLink(
           req,
           req.params.fileId,
-          req.user.id
+          req.user.id,
+          req.body.maxDownloads
         );
 
       res.status(201).json(result);

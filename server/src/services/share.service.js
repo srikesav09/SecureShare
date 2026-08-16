@@ -10,8 +10,22 @@ import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js
 export const createShareLink = async (
   req,
   fileId,
-  userId
+  userId,
+  maxDownloads = null
 ) => {
+
+  if (
+    maxDownloads !== null &&
+    (
+        !Number.isInteger(maxDownloads) ||
+        maxDownloads < 1
+    )
+  ) {
+      throw new AppError(
+          "maxDownloads must be a positive integer",
+          400
+      );
+  }
 
   const file =await File.findById(fileId);
 
@@ -49,7 +63,8 @@ export const createShareLink = async (
     file:file._id,
     owner:userId,
     token:hashedToken,
-    expiresAt
+    expiresAt,
+    maxDownloads
   });
 
   await createAuditLog({
@@ -107,6 +122,15 @@ async(req,token)=>{
     );
   }
 
+  if (share.maxDownloads !== null &&
+    share.downloadCount >= share.maxDownloads) {
+
+    throw new AppError(
+      "Download limit exceeded",
+      403
+    );
+  }
+
   if(share.expiresAt < new Date()){
     await createAuditLog({
       req,
@@ -150,6 +174,32 @@ async(req,token)=>{
     );
   }
 
+  const updatedShare = await Share.findOneAndUpdate(
+    {
+      _id: share._id,
+
+      $or: [
+        { maxDownloads: null },
+        { $expr: { $lt: ["$downloadCount", "$maxDownloads"] } }
+      ]
+    },
+    {
+      $inc: {
+        downloadCount: 1
+      }
+    },
+    {
+      new: true
+    }
+  );
+
+  if (!updatedShare) {
+    throw new AppError(
+      "Download limit exceeded",
+      403
+    );
+  }
+
   await createAuditLog({
     req,
     user: null,
@@ -162,8 +212,6 @@ async(req,token)=>{
     }
   });
 
-  share.downloadCount++;
-  await share.save();
 
 
   return{

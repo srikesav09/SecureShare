@@ -34,6 +34,12 @@ const shareSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    maxDownloads: {
+      type: Number,
+      default: null,
+      min: 1,
+    },
   },
   {
     timestamps: true,
