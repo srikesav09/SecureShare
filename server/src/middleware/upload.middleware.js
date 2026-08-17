@@ -44,6 +44,7 @@ const mimeTypeByExtension = {
       .extname(file.originalname)
       .toLowerCase();
 
+
     const allowedExtensions = [
       ".pdf",
       ".png",

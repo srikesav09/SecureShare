@@ -24,14 +24,10 @@ const fileSchema = new mongoose.Schema(
       required: true,
     },
 
-    path: {
-      type: String,
-      required: null,
-    },
-
     s3Key: {
       type: String,
-      default: null,
+      required: true,
+      unique: true,
     },
 
     owner: {

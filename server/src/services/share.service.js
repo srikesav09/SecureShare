@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import fs from "fs";
 
 import Share from "../models/share.model.js";
 import File from "../models/file.model.js";
@@ -201,20 +200,11 @@ export const downloadSharedFileService = async (req, token) => {
     throw new AppError("File not found", 404);
   }
 
-  let encryptedBuffer;
-  if (file.s3Key) {
-    try {
-      encryptedBuffer = await downloadFromS3(file.s3Key);
-    } catch (error) {
-      console.error("S3 shared download failed:", error.message);
-      throw new AppError("Unable to retrieve file from storage", 500);
-    }
-  } else {
-    if (!file.path || !fs.existsSync(file.path)) {
-      throw new AppError("File not found on server", 404);
-    }
-    encryptedBuffer = fs.readFileSync(file.path);
-  }
+  const encryptedBuffer =
+    await downloadFromS3(
+        file.s3Key
+    );
+
 
   const buffer = decryptBuffer(encryptedBuffer, file.iv);
   const hash = generateHashFromBuffer(buffer);
@@ -240,44 +230,55 @@ export const downloadSharedFileService = async (req, token) => {
 };
 
 
-export const revokeShareLink = async (req,shareId, userId) => {
-    const share = await Share.findById(shareId);
+export const revokeShareLink = async (req, shareId, userId) => {
+  if (!userId) {
+    throw new AppError("User not authenticated", 401);
+  }
 
-    if (!share) {
-        throw new AppError("Share link not found", 404);
-    }
+  const share = await Share.findById(shareId);
 
-    if (!share.owner) {
-        throw new AppError("Share owner missing", 500);
-    }
+  if (!share) {
+    throw new AppError("Share link not found", 404);
+  }
 
-    if (!userId) {
-        throw new AppError("User not authenticated", 401);
-    }
+  if (!share.owner) {
+    throw new AppError("Share owner missing", 500);
+  }
 
-    if (String(share.owner) !== String(userId)) {
-        throw new AppError("Access denied", 403);
-    }
-
-    if (share.isRevoked) {
-        throw new AppError("Share link already revoked", 400);
-    }
-
-    share.isRevoked = true;
-
-    await share.save();
-    
+  if (String(share.owner) !== String(userId)) {
     await createAuditLog({
       req,
       user: userId,
       action: AUDIT_ACTIONS.REVOKE_SHARE,
       resourceType: RESOURCE_TYPES.SHARE,
       resourceId: share._id,
-      status: AUDIT_STATUS.SUCCESS
+      status: AUDIT_STATUS.FAILED,
+      details: { reason: "Access denied" }
     });
+    throw new AppError("Access denied", 403);
+  }
 
-    return {
-        success: true,
-        message: "Share link revoked successfully"
-    };
+  const updatedShare = await Share.findOneAndUpdate(
+    { _id: shareId, isRevoked: false },
+    { $set: { isRevoked: true } },
+    { new: true }
+  );
+
+  if (!updatedShare) {
+    throw new AppError("Share link already revoked", 400);
+  }
+
+  await createAuditLog({
+    req,
+    user: userId,
+    action: AUDIT_ACTIONS.REVOKE_SHARE,
+    resourceType: RESOURCE_TYPES.SHARE,
+    resourceId: share._id,
+    status: AUDIT_STATUS.SUCCESS
+  });
+
+  return {
+    success: true,
+    message: "Share link revoked successfully"
+  };
 };

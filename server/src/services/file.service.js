@@ -1,10 +1,10 @@
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import fs from "fs";
-import { generateHash,encryptFile,decryptFile,generateHashFromBuffer,decryptBuffer } from "./encryption.service.js";
+
+import { generateHash,encryptFile,generateHashFromBuffer,decryptBuffer } from "./encryption.service.js";
 import { createAuditLog } from "./audit.service.js";
 import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js";
-
 import { uploadToS3,downloadFromS3,deleteFromS3 } from "./s3.service.js";
 
 export const saveFile = async (
@@ -56,7 +56,6 @@ export const saveFile = async (
                 storedName:file.filename,
                 mimeType:file.mimetype,
                 size:file.size,
-                path: null,
                 s3Key,
                 owner:user.id,
                 iv:encryption.iv,
@@ -182,40 +181,21 @@ export const downloadFileService = async (
 
     let encryptedBuffer;
 
-    if (file.s3Key) {
-
-        try {
-            encryptedBuffer =
-                await downloadFromS3(
-                    file.s3Key
-                );
-        } catch (error) {
-            console.error(
-                "S3 download failed:",
-                error.message
-            );
-
-            throw new AppError(
-                "Unable to retrieve file from storage",
-                500
-            );
-        }
-
-    } else {
-        if (
-            !file.path ||
-            !fs.existsSync(file.path)
-        ) {
-            throw new AppError(
-                "File not found on server",
-                404
-            );
-        }
-
+    try {
         encryptedBuffer =
-            fs.readFileSync(
-                file.path
+            await downloadFromS3(
+                file.s3Key
             );
+    } catch (error) {
+        console.error(
+            "S3 download failed:",
+            error.message
+        );
+
+        throw new AppError(
+            "Unable to retrieve file from storage",
+            500
+        );
     }
 
     const decrypted =
@@ -241,12 +221,17 @@ export const downloadFileService = async (
     await createAuditLog({
         req,
         user: userId,
-        action: AUDIT_ACTIONS.DOWNLOAD_FILE,
-        resourceType: RESOURCE_TYPES.FILE,
-        resourceId: file._id,
-        status: AUDIT_STATUS.SUCCESS,
+        action:
+            AUDIT_ACTIONS.DOWNLOAD_FILE,
+        resourceType:
+            RESOURCE_TYPES.FILE,
+        resourceId:
+            file._id,
+        status:
+            AUDIT_STATUS.SUCCESS,
         details: {
-            filename: file.originalName
+            filename:
+                file.originalName
         }
     });
 
@@ -280,29 +265,20 @@ export const deleteFileService = async (
         );
     }
 
-    if (file.s3Key) {
-        try {
-            await deleteFromS3(
-                file.s3Key
-            );
-        } catch (error) {
-            console.error(
-                "S3 delete failed:",
-                error.message
-            );
+    try {
+        await deleteFromS3(
+            file.s3Key
+        );
+    } catch (error) {
+        console.error(
+            "S3 delete failed:",
+            error.message
+        );
 
-            throw new AppError(
-                "Unable to delete file from storage",
-                500
-            );
-        }
-    }
-
-    if (
-        file.path &&
-        fs.existsSync(file.path)
-    ) {
-        fs.unlinkSync(file.path);
+        throw new AppError(
+            "Unable to delete file from storage",
+            500
+        );
     }
 
     await File.findByIdAndDelete(
@@ -312,17 +288,23 @@ export const deleteFileService = async (
     await createAuditLog({
         req,
         user: userId,
-        action: AUDIT_ACTIONS.DELETE_FILE,
-        resourceType: RESOURCE_TYPES.FILE,
-        resourceId: file._id,
-        status: AUDIT_STATUS.SUCCESS,
+        action:
+            AUDIT_ACTIONS.DELETE_FILE,
+        resourceType:
+            RESOURCE_TYPES.FILE,
+        resourceId:
+            file._id,
+        status:
+            AUDIT_STATUS.SUCCESS,
         details: {
-            filename: file.originalName
+            filename:
+                file.originalName
         }
     });
 
     return {
         success: true,
-        message: "File deleted successfully"
+        message:
+            "File deleted successfully"
     };
 };
