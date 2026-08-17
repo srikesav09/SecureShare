@@ -223,8 +223,10 @@ export const downloadSharedFileService = async (req, token) => {
     details: { filename: file.originalName }
   });
 
-  return {
-    metadata: file,
+
+
+  return{
+    metadata:file,
     buffer
   };
 };
