@@ -26,7 +26,12 @@ const fileSchema = new mongoose.Schema(
 
     path: {
       type: String,
-      required: true,
+      required: null,
+    },
+
+    s3Key: {
+      type: String,
+      default: null,
     },
 
     owner: {
@@ -34,6 +39,7 @@ const fileSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     encrypted: {
       type: Boolean,
       default: true

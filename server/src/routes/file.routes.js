@@ -7,7 +7,7 @@ import { getMyFiles } from "../controllers/file.controller.js";
 import { downloadFile } from "../controllers/file.controller.js";
 import { deleteFile } from "../controllers/file.controller.js";
 import { uploadLimiter } from "../middleware/rateLimiter.middleware.js";
-
+import { validateFileSignature } from "../middleware/fileSignature.middleware.js";
 const router = express.Router();
 
 router.post(
@@ -15,6 +15,7 @@ router.post(
     authenticate,
     uploadLimiter,
     upload.single("file"),
+    validateFileSignature,
     uploadFile
 );
 

@@ -1,13 +1,14 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import fs from "fs";
 
 import Share from "../models/share.model.js";
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
-import { configDotenv } from "dotenv";
-import { decryptFile, generateHashFromBuffer} from "./encryption.service.js";
+import { generateHashFromBuffer , decryptBuffer} from "./encryption.service.js";
 import { createAuditLog } from "./audit.service.js";
 import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js";
+import { downloadFromS3 } from "./s3.service.js";
 
 export const createShareLink = async (
   req,
@@ -120,46 +121,38 @@ export const createShareLink = async (
   };
 };
 
-export const downloadSharedFileService =
-async(req,token)=>{
+export const downloadSharedFileService = async (req, token) => {
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  const hashedToken = crypto.createHash("sha256")
-  .update(token)
-  .digest("hex");
+  const share = await Share.findOne({ token: hashedToken });
 
-  const share =
-  await Share.findOne({
-    token:hashedToken
-  });
-
-  if(!share){
+  if (!share) {
     await createAuditLog({
       req,
       action: AUDIT_ACTIONS.INVALID_SHARE,
       status: AUDIT_STATUS.FAILED,
-      details: {
-          token
-      }
+      details: { token }
     });
-    throw new AppError(
-    "Invalid share link",
-    404
-    );
+    throw new AppError("Invalid share link", 404);
   }
 
-  if(share.isRevoked){
-    throw new AppError(
-      "Share link revoked",
-      403
-    );
+  if (share.isRevoked) {
+    throw new AppError("Share link revoked", 403);
+  }
+
+  if (share.expiresAt < new Date()) {
+    await createAuditLog({
+      req,
+      action: AUDIT_ACTIONS.INVALID_SHARE,
+      status: AUDIT_STATUS.FAILED,
+      details: { token }
+    });
+    throw new AppError("Share link expired", 410);
   }
 
   const password = req.headers["x-share-password"];
-
   if (share.passwordHash) {
-
     if (!password) {
-
       await createAuditLog({
         req,
         user: null,
@@ -167,24 +160,13 @@ async(req,token)=>{
         resourceType: RESOURCE_TYPES.SHARE,
         resourceId: share._id,
         status: AUDIT_STATUS.FAILED,
-        details: {
-          reason: "Password required"
-        }
+        details: { reason: "Password required" }
       });
-
-      throw new AppError(
-        "Share password required",
-        401
-      );
+      throw new AppError("Share password required", 401);
     }
 
-    const passwordValid = await bcrypt.compare(
-      password,
-      share.passwordHash
-    );
-
+    const passwordValid = await bcrypt.compare(password, share.passwordHash);
     if (!passwordValid) {
-
       await createAuditLog({
         req,
         user: null,
@@ -192,94 +174,53 @@ async(req,token)=>{
         resourceType: RESOURCE_TYPES.SHARE,
         resourceId: share._id,
         status: AUDIT_STATUS.FAILED,
-        details: {
-          reason: "Invalid password"
-        }
+        details: { reason: "Invalid password" }
       });
-
-      throw new AppError(
-        "Invalid share password",
-        403
-      );
+      throw new AppError("Invalid share password", 403);
     }
-  }
-
-  if (share.maxDownloads !== null &&
-    share.downloadCount >= share.maxDownloads) {
-
-    throw new AppError(
-      "Download limit exceeded",
-      403
-    );
-  }
-
-  if(share.expiresAt < new Date()){
-    await createAuditLog({
-      req,
-      action: AUDIT_ACTIONS.INVALID_SHARE,
-      status: AUDIT_STATUS.FAILED,
-      details: {
-          token
-      }
-    });
-    throw new AppError(
-    "Share link expired",
-    410
-    );
-
-  }
-
-  const file = await File.findById(
-    share.file
-  );
-
-  if(!file){
-
-    throw new AppError(
-    "File not found",
-    404
-    );
-
-  }
-
-  const buffer = decryptFile(
-    file.path,
-    file.iv
-  );
-
-  const hash =generateHashFromBuffer(buffer);
-
-  if(hash !== file.hash){
-    throw new AppError(
-      "Integrity check failed",
-      500
-    );
   }
 
   const updatedShare = await Share.findOneAndUpdate(
     {
       _id: share._id,
-
       $or: [
         { maxDownloads: null },
         { $expr: { $lt: ["$downloadCount", "$maxDownloads"] } }
       ]
     },
-    {
-      $inc: {
-        downloadCount: 1
-      }
-    },
-    {
-      returnDocument: 'after'
-    }
+    { $inc: { downloadCount: 1 } },
+    { returnDocument: "after" }
   );
 
   if (!updatedShare) {
-    throw new AppError(
-      "Download limit exceeded",
-      403
-    );
+    throw new AppError("Download limit exceeded", 403);
+  }
+
+  const file = await File.findById(share.file);
+  if (!file) {
+    throw new AppError("File not found", 404);
+  }
+
+  let encryptedBuffer;
+  if (file.s3Key) {
+    try {
+      encryptedBuffer = await downloadFromS3(file.s3Key);
+    } catch (error) {
+      console.error("S3 shared download failed:", error.message);
+      throw new AppError("Unable to retrieve file from storage", 500);
+    }
+  } else {
+    if (!file.path || !fs.existsSync(file.path)) {
+      throw new AppError("File not found on server", 404);
+    }
+    encryptedBuffer = fs.readFileSync(file.path);
+  }
+
+  const buffer = decryptBuffer(encryptedBuffer, file.iv);
+  const hash = generateHashFromBuffer(buffer);
+
+  if (hash !== file.hash) {
+    throw new AppError("Integrity check failed", 500);
   }
 
   await createAuditLog({
@@ -289,17 +230,13 @@ async(req,token)=>{
     resourceType: RESOURCE_TYPES.SHARE,
     resourceId: share._id,
     status: AUDIT_STATUS.SUCCESS,
-    details: {
-        filename: file.originalName
-    }
+    details: { filename: file.originalName }
   });
 
-
-  return{
-    metadata:file,
+  return {
+    metadata: file,
     buffer
   };
-
 };
 
 

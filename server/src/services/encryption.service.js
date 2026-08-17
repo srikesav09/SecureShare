@@ -43,25 +43,12 @@ export const decryptFile = (
     iv
 ) => {
     const encryptedData =
-        fs.readFileSync(
-            encryptedPath
-        );
+        fs.readFileSync(encryptedPath);
 
-    const decipher =
-        crypto.createDecipheriv(
-            "aes-256-cbc",
-            KEY,
-            Buffer.from(iv, "hex")
-        );
-
-    const decrypted =
-        Buffer.concat([
-            decipher.update(
-                encryptedData
-            ),
-            decipher.final()
-        ]);
-    return decrypted;
+    return decryptBuffer(
+        encryptedData,
+        iv
+    );
 };
 
 export const generateHash = (filePath) => {
@@ -79,4 +66,22 @@ export const generateHashFromBuffer = (buffer) => {
         .createHash("sha256")
         .update(buffer)
         .digest("hex");
+};
+
+
+
+export const decryptBuffer = (
+    encryptedData,
+    iv
+) => {
+    const decipher = crypto.createDecipheriv(
+        "aes-256-cbc",
+        KEY,
+        Buffer.from(iv, "hex")
+    );
+
+    return Buffer.concat([
+        decipher.update(encryptedData),
+        decipher.final()
+    ]);
 };

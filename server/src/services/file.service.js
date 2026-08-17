@@ -1,50 +1,146 @@
 import File from "../models/file.model.js";
 import AppError from "../utils/AppError.js";
 import fs from "fs";
-import { generateHash,encryptFile,decryptFile,generateHashFromBuffer } from "./encryption.service.js";
+import { generateHash,encryptFile,decryptFile,generateHashFromBuffer,decryptBuffer } from "./encryption.service.js";
 import { createAuditLog } from "./audit.service.js";
 import { AUDIT_ACTIONS,AUDIT_STATUS,RESOURCE_TYPES } from "../utils/constants.js";
 
-export const saveFile = async (req,file, user) => {
+import { uploadToS3,downloadFromS3,deleteFromS3 } from "./s3.service.js";
+
+export const saveFile = async (
+    req,
+    file,
+    user
+) => {
 
     if (!file) {
-
         throw new AppError(
             "No file uploaded",
             400
         );
     }
 
-    const hash =generateHash(file.path);
-    const encryption =encryptFile(file.path);
+    let encryption = null;
+    let s3Key = null;
+    let uploadedToS3 = false;
 
-    const uploadedFile = await File.create({
-        originalName: file.originalname,
-        storedName: file.filename,
-        mimeType: file.mimetype,
-        size: file.size,
-        path: encryption.encryptedPath,
-        owner: user.id,
-        iv:encryption.iv,
-        hash,
-        encrypted: true
-    });
-    await createAuditLog({
-        req,
-        user: user.id,
-        action: AUDIT_ACTIONS.UPLOAD_FILE,
-        resourceType: RESOURCE_TYPES.FILE,
-        resourceId: uploadedFile._id,
-        status: AUDIT_STATUS.SUCCESS,
-        details: {
-            filename: uploadedFile.originalName
+    try {
+
+        const hash = generateHash(
+            file.path
+        );
+
+        encryption = encryptFile(
+            file.path
+        );
+
+        s3Key =`files/${user.id}/${file.filename}.enc`;
+
+        const encryptedBuffer =
+            fs.readFileSync(
+                encryption.encryptedPath
+            );
+
+        await uploadToS3({
+            key: s3Key,
+            body: encryptedBuffer,
+            contentType:
+                "application/octet-stream"
+        });
+
+        uploadedToS3 = true;
+
+        const uploadedFile =
+            await File.create({
+                originalName:file.originalname,
+                storedName:file.filename,
+                mimeType:file.mimetype,
+                size:file.size,
+                path: null,
+                s3Key,
+                owner:user.id,
+                iv:encryption.iv,
+                hash,
+                encrypted: true
+            });
+
+        if (
+            encryption.encryptedPath &&
+            fs.existsSync(
+                encryption.encryptedPath
+            )
+        ) {
+            fs.unlinkSync(
+                encryption.encryptedPath
+            );
         }
-    });
-    return {
-        success: true,
-        message: "File uploaded successfully",
-        data: uploadedFile
-    };
+
+        await createAuditLog({
+            req,
+            user: user.id,
+            action:
+                AUDIT_ACTIONS.UPLOAD_FILE,
+
+            resourceType:
+                RESOURCE_TYPES.FILE,
+
+            resourceId:
+                uploadedFile._id,
+
+            status:
+                AUDIT_STATUS.SUCCESS,
+
+            details: {
+                filename:
+                    uploadedFile.originalName
+            }
+        });
+
+        return {
+            success: true,
+            message:
+                "File uploaded successfully",
+            data: uploadedFile
+        };
+
+    } catch (error) {
+
+        if (
+            encryption?.encryptedPath &&
+            fs.existsSync(
+                encryption.encryptedPath
+            )
+        ) {
+            try {
+                fs.unlinkSync(
+                    encryption.encryptedPath
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "Local cleanup failed:",
+                    cleanupError.message
+                );
+            }
+        }
+
+        if (
+            uploadedToS3 &&
+            s3Key
+        ) {
+            try {
+                await deleteFromS3(
+                    s3Key
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "S3 cleanup failed:",
+                    cleanupError.message
+                );
+            }
+        }
+
+        throw error;
+    }
 };
 
 export const getFiles = async (userId) => {
@@ -66,12 +162,14 @@ export const downloadFileService = async (
     userId
 ) => {
     const file = await File.findById(fileId);
+
     if (!file) {
         throw new AppError(
             "File not found",
             404
         );
     }
+
     if (
         file.owner.toString() !==
         userId.toString()
@@ -81,28 +179,65 @@ export const downloadFileService = async (
             403
         );
     }
-    if (!fs.existsSync(file.path)) {
-        throw new AppError(
-            "File not found on server",
-            404
-        );
-    }
-    const decrypted =decryptFile(
-          file.path,
-          file.iv
-      );
 
-    const currentHash =generateHashFromBuffer(decrypted);
+    let encryptedBuffer;
+
+    if (file.s3Key) {
+
+        try {
+            encryptedBuffer =
+                await downloadFromS3(
+                    file.s3Key
+                );
+        } catch (error) {
+            console.error(
+                "S3 download failed:",
+                error.message
+            );
+
+            throw new AppError(
+                "Unable to retrieve file from storage",
+                500
+            );
+        }
+
+    } else {
+        if (
+            !file.path ||
+            !fs.existsSync(file.path)
+        ) {
+            throw new AppError(
+                "File not found on server",
+                404
+            );
+        }
+
+        encryptedBuffer =
+            fs.readFileSync(
+                file.path
+            );
+    }
+
+    const decrypted =
+        decryptBuffer(
+            encryptedBuffer,
+            file.iv
+        );
+
+    const currentHash =
+        generateHashFromBuffer(
+            decrypted
+        );
 
     if (
-        currentHash !==
-        file.hash
-    ){ 
-      throw new AppError(
-      "Integrity check failed",
-      500
-      );
+        currentHash !== file.hash
+    ) {
+        throw new AppError(
+            "Integrity check failed",
+            500
+        );
     }
+
     await createAuditLog({
         req,
         user: userId,
@@ -116,8 +251,8 @@ export const downloadFileService = async (
     });
 
     return {
-      metadata:file,
-      buffer:decrypted
+        metadata: file,
+        buffer: decrypted
     };
 };
 
@@ -126,22 +261,54 @@ export const deleteFileService = async (
     fileId,
     userId
 ) => {
-
     const file = await File.findById(fileId);
+
     if (!file) {
-        throw new AppError("File not found", 404);
+        throw new AppError(
+            "File not found",
+            404
+        );
     }
+
     if (
         file.owner.toString() !==
         userId.toString()
     ) {
-        throw new AppError("Access denied", 403);
+        throw new AppError(
+            "Access denied",
+            403
+        );
     }
-    if (fs.existsSync(file.path)) {
+
+    if (file.s3Key) {
+        try {
+            await deleteFromS3(
+                file.s3Key
+            );
+        } catch (error) {
+            console.error(
+                "S3 delete failed:",
+                error.message
+            );
+
+            throw new AppError(
+                "Unable to delete file from storage",
+                500
+            );
+        }
+    }
+
+    if (
+        file.path &&
+        fs.existsSync(file.path)
+    ) {
         fs.unlinkSync(file.path);
     }
-    await File.findByIdAndDelete(fileId);
-    
+
+    await File.findByIdAndDelete(
+        fileId
+    );
+
     await createAuditLog({
         req,
         user: userId,

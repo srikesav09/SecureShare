@@ -10,7 +10,7 @@ import shareRoutes from "./routes/share.routes.js";
 import publicRoutes from "./routes/public.routes.js"
 import { requestId } from "./middleware/requestId.middleware.js";
 import adminRoutes from "./routes/admin.routes.js";
-
+import s3Routes from "./routes/s3.routes.js";
 
 const app = express();
 
@@ -36,7 +36,7 @@ app.use("/api/files", fileRoutes);
 app.use("/api/share", shareRoutes);
 app.use("/share", publicRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use("/api/s3", s3Routes);
 
 
 app.use(errorHandler);
