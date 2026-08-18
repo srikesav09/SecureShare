@@ -27,7 +27,6 @@ app.use(
         contentSecurityPolicy: false
     })
 );
-
 app.disable("x-powered-by");
 
 app.use("/api/health",healthRoutes);
