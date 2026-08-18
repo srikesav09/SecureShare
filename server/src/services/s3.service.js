@@ -6,15 +6,7 @@ import {
 } from "@aws-sdk/client-s3";
 
 const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-<<<<<<< Updated upstream
-  /*credentials: {
-=======
-  /* credentials: {
->>>>>>> Stashed changes
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  }, */
+  region: process.env.AWS_REGION
 });
 
 export const uploadToS3 = async ({
