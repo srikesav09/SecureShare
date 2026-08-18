@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import fs from "fs";
 
+const key = process.env.ENCRYPTION_KEY || "default_32_byte_secret_key_for_test!";
+const keyBuffer = Buffer.from(key);
+
 const KEY = Buffer.from(
   process.env.ENCRYPTION_KEY,
   "hex"

@@ -4,7 +4,7 @@ const defaultValidateConfig = {
   trustProxy: false,
 };
 
-const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MINUTES) * 60 * 1000;
+const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MINUTES) || 15 * 60 * 1000;
 
 export const loginLimiter = rateLimit({
     windowMs,
