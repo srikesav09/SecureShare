@@ -72,4 +72,4 @@ jobs:
       - name: Health check
         run: |
           sleep 5
-          curl --fail http://65.1.94.22/api/health
+          curl --fail http://65.1.94.22/api/health 
