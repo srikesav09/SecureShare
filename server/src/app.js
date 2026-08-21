@@ -24,7 +24,8 @@ app.use(
         crossOriginResourcePolicy: {
             policy: "cross-origin"
         },
-        contentSecurityPolicy: false
+        contentSecurityPolicy: false,
+        hsts: false
     })
 );
 app.disable("x-powered-by");
