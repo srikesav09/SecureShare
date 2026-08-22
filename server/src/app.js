@@ -25,7 +25,10 @@ app.use(
             policy: "cross-origin"
         },
         contentSecurityPolicy: false,
-        hsts: false
+        hsts: {
+            maxAge: 31536000,
+            includeSubDomains: true
+        }
     })
 );
 app.disable("x-powered-by");
