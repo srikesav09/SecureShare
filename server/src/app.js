@@ -14,9 +14,19 @@ import adminRoutes from "./routes/admin.routes.js";
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  "https://secureshare.srikesav.site",
+  "http://localhost:5173",
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
+
 app.use(express.json());
-app.set("trust proxy",true);
+app.set("trust proxy",1);
 app.use(requestId);
 
 app.use(
