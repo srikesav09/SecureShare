@@ -8,7 +8,7 @@ function Home() {
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const { data } = await api.get("/health");
+        const { data } = await api.get("/api/health");
         setStatus(data);
       } catch (error) {
         console.error("Health check failed:", error);
