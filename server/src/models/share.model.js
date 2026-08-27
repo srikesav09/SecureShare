@@ -36,15 +36,30 @@ const shareSchema = new mongoose.Schema(
     },
 
     downloadCount: {
-      type: Number,
-      default: 0,
-    },
+    type: Number,
+    required: true,
+    default: 0,
+    min: 0,
+    validate: {
+        validator: Number.isInteger,
+        message: "downloadCount must be a non-negative integer"
+    }
+  },
 
-    maxDownloads: {
-      type: Number,
-      default: null,
-      min: 1,
-    },
+  maxDownloads: {
+    type: Number,
+    default: null,
+    min: 1,
+    validate: {
+        validator: function (value) {
+            return (
+                value === null ||
+                Number.isInteger(value)
+            );
+        },
+        message: "maxDownloads must be a positive integer"
+    }
+  },
   },
   {
     timestamps: true,

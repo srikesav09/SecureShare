@@ -1,8 +1,22 @@
 import crypto from "crypto";
 import fs from "fs";
+import  AppError from "../utils/AppError.js";
 
-const rawKey = process.env.ENCRYPTION_KEY || "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const rawKey = process.env.ENCRYPTION_KEY;
 
+if (!rawKey) {
+  throw new AppError(
+    "ENCRYPTION_KEY is not configured",
+    500
+  );
+}
+
+if (!/^[0-9a-fA-F]{64}$/.test(rawKey)) {
+  throw new AppError(
+    "ENCRYPTION_KEY must be a 64-character hexadecimal string",
+    500
+  );
+}
 const KEY = Buffer.from(rawKey, "hex");
 
 export const encryptFile = (filePath) => {

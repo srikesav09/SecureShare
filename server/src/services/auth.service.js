@@ -6,7 +6,7 @@ import { generateToken } from "../utils/jwt.js";
 
 export const registerUser = async (userData) => {
 
-  const {name, email, password, role} = userData;
+  const {name, email, password} = userData;
   const existingUser = await User.findOne({email});
   if(existingUser) {
     throw new AppError("Email already exists",409);
@@ -17,7 +17,7 @@ export const registerUser = async (userData) => {
     name,
     email,
     password: hashedPassword,
-    role
+    role: "USER"
   });
 
   return {

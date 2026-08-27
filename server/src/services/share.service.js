@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 
 import Share from "../models/share.model.js";
 import File from "../models/file.model.js";
@@ -53,6 +54,9 @@ export const createShareLink = async (
   }
 
   
+  if (!mongoose.Types.ObjectId.isValid(fileId)) {
+    throw new AppError("Invalid file ID", 400);
+  }
 
   const file =await File.findById(fileId);
 
@@ -236,6 +240,13 @@ export const revokeShareLink = async (req, shareId, userId) => {
   if (!userId) {
     throw new AppError("User not authenticated", 401);
   }
+
+  if (!mongoose.Types.ObjectId.isValid(shareId)) {
+        throw new AppError(
+            "Invalid share ID",
+            400
+        );
+    }
 
   const share = await Share.findById(shareId);
 

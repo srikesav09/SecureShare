@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import multer from "multer";
+
 
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -26,6 +28,22 @@ app.use(
 );
 
 app.use(express.json());
+
+app.use((req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+        res.setHeader(
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate, proxy-revalidate"
+        );
+
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+    }
+
+    next();
+});
+
+
 app.set("trust proxy",1);
 app.use(requestId);
 
@@ -43,6 +61,7 @@ app.use(
 );
 app.disable("x-powered-by");
 
+
 app.use("/api/health",healthRoutes);
 app.use("/api/auth",authRoutes);
 app.use("/api/files", fileRoutes);
@@ -50,7 +69,16 @@ app.use("/api/share", shareRoutes);
 app.use("/share", publicRoutes);
 app.use("/api/admin", adminRoutes);
 
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid file upload"
+        });
+    }
 
+    next(err);
+});
 
 app.use(errorHandler);
 

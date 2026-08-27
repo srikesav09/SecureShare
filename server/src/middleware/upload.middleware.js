@@ -1,88 +1,139 @@
 import multer from "multer";
-import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
 import path from "path";
-import AppError from "../utils/AppError.js";
+import fs from "fs";
 
 const uploadDir = "uploads";
 
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir, {
+        recursive: true
+    });
 }
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, uploadDir);
-  },
 
-  filename(req, file, cb) {
-    const extension = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${extension}`);
-  },
-});
+const ALLOWED_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".txt": "text/plain"
+};
 
-const allowedMimeTypes = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "text/plain",
-];
+const fileFilter = (req, file, cb) => {
 
-const mimeTypeByExtension = {
-  ".pdf": "application/pdf",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".docx":
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".txt": "text/plain",
-  };
+    const filename =
+        file.originalname || "";
 
-  const fileFilter = (req, file, cb) => {
-    const extension = path
-      .extname(file.originalname)
-      .toLowerCase();
+    if (filename.includes("\0")) {
+        return cb(
+            new Error("Invalid filename")
+        );
+    }
 
-
-    const allowedExtensions = [
-      ".pdf",
-      ".png",
-      ".jpg",
-      ".jpeg",
-      ".docx",
-      ".txt",
-    ];
-
-    const extensionAllowed =
-      allowedExtensions.includes(extension);
-
-    const mimeAllowed =
-      allowedMimeTypes.includes(file.mimetype);
-
-    if (mimeAllowed && extensionAllowed) {
-      return cb(null, true);
+    if (!filename.trim()) {
+        return cb(
+            new Error("Invalid filename")
+        );
     }
 
     if (
-      file.mimetype === "application/octet-stream" &&
-      extensionAllowed
+        filename.includes("..") ||
+        filename.includes("/") ||
+        filename.includes("\\")
     ) {
-      file.mimetype = mimeTypeByExtension[extension];
-
-      return cb(null, true);
+        return cb(
+            new Error("Invalid filename")
+        );
     }
 
-    return cb(
-      new AppError("Unsupported file type", 400),
-      false
-    );
-  };
+    if (filename.length > 255) {
+        return cb(
+            new Error("Filename too long")
+        );
+    }
+
+    const extension =
+        path.extname(filename).toLowerCase();
+
+    const expectedMime =
+        ALLOWED_TYPES[extension];
+
+    if (!expectedMime) {
+        return cb(
+            new Error("Unsupported file type")
+        );
+    }
+
+    if (file.mimetype !== expectedMime) {
+        return cb(
+            new Error(
+                "File extension and MIME type do not match"
+            )
+        );
+    }
+
+    cb(null, true);
+};
+
+const storage = multer.diskStorage({
+
+    destination: (req, file, cb) => {
+
+        cb(null, uploadDir);
+
+    },
+
+    filename: (req, file, cb) => {
+
+        const original =
+            path.basename(
+                file.originalname || "file"
+            );
+
+        const extension =
+            path.extname(original)
+                .toLowerCase();
+
+        const base =
+            path.basename(
+                original,
+                path.extname(original)
+            );
+
+        const safeBase =
+            base
+                .replace(
+                    /[^a-zA-Z0-9_-]/g,
+                    "_"
+                )
+                .slice(0, 100);
+
+        const safeExtension =
+            extension
+                .replace(
+                    /[^a-zA-Z0-9.]/g,
+                    ""
+                )
+                .slice(0, 20);
+
+        const filename =
+            `${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 10)}-${safeBase || "file"}${safeExtension}`;
+
+        cb(null, filename);
+    }
+});
 
 export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
+
+    storage,
+
+    fileFilter,
+
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1
+    }
+
 });
