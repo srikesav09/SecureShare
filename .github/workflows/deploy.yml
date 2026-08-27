@@ -31,7 +31,7 @@ jobs:
       - name: Run tests
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-        run: npm test
+        run: npm test -- --test-concurrency=1
 
   deploy:
     needs: test
