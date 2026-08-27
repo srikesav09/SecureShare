@@ -3,12 +3,5 @@ node_modules
 .env.*
 !.env.example
 
-*.test.js
-
-env.js
-setup.js
-
 uploads/
 *.log
-
-test/
