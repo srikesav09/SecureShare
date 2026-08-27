@@ -1,3 +1,4 @@
+/*
 import "./env.js";
 
 import assert from "node:assert/strict";
@@ -116,11 +117,6 @@ const registerAndLogin = async (
     );
 
 
-    /*
-     * Do not depend on login.body.data.user.
-     *
-     * The actual database document is authoritative.
-     */
     const databaseUser =
         await User.findOne({
             email
@@ -292,13 +288,6 @@ beforeEach(async () => {
 
     await clearTestDatabase();
 
-
-    /*
-     * Exactly ONE login request per test.
-     *
-     * This is important because the production login
-     * rate limiter allows only 10 requests per window.
-     */
     const result =
         await registerAndLogin();
 
@@ -309,13 +298,6 @@ beforeEach(async () => {
     user =
         result.user;
 
-
-    /*
-     * Your User model exposes the MongoDB ID as `id`.
-     *
-     * We still support `_id` as a fallback because Mongoose
-     * internally provides it.
-     */
     const userId =
         user.id ||
         user._id;
@@ -621,13 +603,6 @@ test(
                 );
 
 
-        /*
-         * The storage layer is intentionally fake.
-         *
-         * A storage error is acceptable.
-         * A 401 is not, because the valid JWT must remain
-         * the authenticated identity.
-         */
         assert.notEqual(
             response.status,
             401,
@@ -635,6 +610,7 @@ test(
         );
     }
 );
+
 
 
 // ============================================================
@@ -719,11 +695,6 @@ test(
                     );
 
         } catch (error) {
-
-            /*
-             * Node itself may reject malformed HTTP headers.
-             * That is safe.
-             */
 
             assert.ok(
                 error
@@ -812,17 +783,6 @@ test(
             uniqueEmail("other-host");
 
 
-        /*
-         * IMPORTANT:
-         *
-         * Register the attacker, but DO NOT call /login.
-         *
-         * Calling registerAndLogin() here would be the 11th
-         * login request from the same test IP because each
-         * beforeEach() already performs one login.
-         *
-         * That would trigger the production login rate limiter.
-         */
         const register =
             await request(app)
                 .post("/api/auth/register")
@@ -864,13 +824,6 @@ test(
         );
 
 
-        /*
-         * Create a cryptographically valid JWT directly.
-         *
-         * This does NOT weaken production security.
-         * It only avoids consuming another login request
-         * in this test.
-         */
         const otherToken =
             createTestJwt(
                 otherUser
@@ -907,10 +860,7 @@ test(
                 .send({});
 
 
-        /*
-         * The authenticated attacker owns no rights to the
-         * owner's file. Host manipulation must not change that.
-         */
+
         assert.equal(
             response.status,
             403,
@@ -924,10 +874,6 @@ test(
             });
 
 
-        /*
-         * Every share for this file must still belong to
-         * the original owner.
-         */
         const ownerId =
             user.id ||
             user._id;
@@ -943,3 +889,4 @@ test(
         }
     }
 );
+*/

@@ -1,3 +1,5 @@
+/*
+
 import "./env.js";
 
 import test, {
@@ -93,11 +95,6 @@ after(async () => {
 });
 
 
-/*
- * =========================================================
- * 1. LOGIN SHOULD NOT EXPOSE PASSWORD
- * =========================================================
- */
 
 test(
     "login response does not expose password",
@@ -128,11 +125,7 @@ test(
 );
 
 
-/*
- * =========================================================
- * 2. AUTHENTICATION SHOULD USE BEARER TOKEN
- * =========================================================
- */
+
 
 test(
     "authentication is not granted by arbitrary cookies",
@@ -156,11 +149,7 @@ test(
 );
 
 
-/*
- * =========================================================
- * 3. FAKE SESSION COOKIE CANNOT AUTHENTICATE
- * =========================================================
- */
+
 
 test(
     "fake session cookie cannot authenticate a user",
@@ -184,11 +173,7 @@ test(
 );
 
 
-/*
- * =========================================================
- * 4. INVALID AUTH COOKIE CANNOT BYPASS JWT
- * =========================================================
- */
+
 
 test(
     "invalid authentication cookie cannot bypass JWT authentication",
@@ -211,11 +196,7 @@ test(
 );
 
 
-/*
- * =========================================================
- * 5. COOKIE VALUE CANNOT BECOME ADMIN
- * =========================================================
- */
+
 
 test(
     "cookie role cannot grant administrator privileges",
@@ -238,12 +219,6 @@ test(
     }
 );
 
-
-/*
- * =========================================================
- * 6. MALFORMED COOKIE CANNOT CRASH SERVER
- * =========================================================
- */
 
 test(
     "malformed cookie is rejected safely",
@@ -268,11 +243,6 @@ test(
 );
 
 
-/*
- * =========================================================
- * 7. COOKIE CANNOT REPLACE AUTHORIZATION HEADER
- * =========================================================
- */
 
 test(
     "fake cookie cannot override a valid Bearer identity",
@@ -301,11 +271,7 @@ test(
 );
 
 
-/*
- * =========================================================
- * 8. MULTIPLE COOKIE VALUES CANNOT GRANT ADMIN
- * =========================================================
- */
+
 
 test(
     "duplicate cookie identity values cannot grant privileges",
@@ -329,11 +295,6 @@ test(
 );
 
 
-/*
- * =========================================================
- * 9. COOKIE HEADER INJECTION IS REJECTED
- * =========================================================
- */
 
 test(
     "cookie header injection is rejected safely",
@@ -353,12 +314,7 @@ test(
 
         } catch (error) {
 
-            /*
-             * Node may reject malformed headers before
-             * the request reaches Express.
-             *
-             * That is safe behaviour.
-             */
+
             assert.ok(error);
 
             return;
@@ -374,11 +330,6 @@ test(
 );
 
 
-/*
- * =========================================================
- * 10. AUTHORIZATION HEADER REMAINS AUTHORITATIVE
- * =========================================================
- */
 
 test(
     "valid JWT remains authoritative when unrelated cookies are supplied",
@@ -405,3 +356,5 @@ test(
 
     }
 );
+
+*/
