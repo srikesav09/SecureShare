@@ -1,14 +1,9 @@
-node_modules
+node_modules/
 .env
-.env.*
-!.env.example
-
-*.test.js
-
+.env.local
+.env.production
+any *.test.js
 env.js
 setup.js
-
 uploads/
 *.log
-
-test/
