@@ -29,6 +29,8 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: npm test
 
   deploy:
@@ -42,6 +44,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+          
 
       - name: Deploy through AWS SSM
         shell: bash
