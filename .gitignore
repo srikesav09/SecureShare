@@ -30,3 +30,5 @@ coverage/
 *.local
 
 .postman/
+
+*.test.js
