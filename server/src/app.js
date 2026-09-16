@@ -19,6 +19,7 @@ const app = express();
 const allowedOrigins = [
   "https://secureshare.srikesav.site",
   "http://localhost:5173",
+  "http://localhost:5174",
 ];
 
 app.use(

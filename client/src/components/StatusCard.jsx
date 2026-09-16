@@ -5,13 +5,9 @@ function StatusCard({ status }) {
         Backend Status
       </h2>
 
-      <p className="text-emerald-400 font-medium">
-        🟢 {status.message}
-      </p>
+      <p className="text-emerald-400 font-medium">🟢 {status.message}</p>
 
-      <p className="text-slate-400 mt-2">
-        Version: {status.version}
-      </p>
+      <p className="text-slate-400 mt-2">Version: {status.version}</p>
     </div>
   );
 }
