@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "format": "npx --cache .npm-cache --yes prettier@3.6.2 --write src",
+    "format:check": "npx --cache .npm-cache --yes prettier@3.6.2 --check src",
     "test": "node --test"
   },
   "type": "module",

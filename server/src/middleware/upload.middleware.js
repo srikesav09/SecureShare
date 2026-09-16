@@ -1,139 +1,88 @@
-import multer from "multer";
-import path from "path";
-import fs from "fs";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
-const uploadDir = "uploads";
+const uploadDir = 'uploads';
 
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, {
-        recursive: true
-    });
+  fs.mkdirSync(uploadDir, {
+    recursive: true,
+  });
 }
 
-
 const ALLOWED_TYPES = {
-    ".pdf": "application/pdf",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".txt": "text/plain"
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.txt': 'text/plain',
 };
 
 const fileFilter = (req, file, cb) => {
+  const filename = file.originalname || '';
 
-    const filename =
-        file.originalname || "";
+  if (filename.includes('\0')) {
+    return cb(new Error('Invalid filename'));
+  }
 
-    if (filename.includes("\0")) {
-        return cb(
-            new Error("Invalid filename")
-        );
-    }
+  if (!filename.trim()) {
+    return cb(new Error('Invalid filename'));
+  }
 
-    if (!filename.trim()) {
-        return cb(
-            new Error("Invalid filename")
-        );
-    }
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return cb(new Error('Invalid filename'));
+  }
 
-    if (
-        filename.includes("..") ||
-        filename.includes("/") ||
-        filename.includes("\\")
-    ) {
-        return cb(
-            new Error("Invalid filename")
-        );
-    }
+  if (filename.length > 255) {
+    return cb(new Error('Filename too long'));
+  }
 
-    if (filename.length > 255) {
-        return cb(
-            new Error("Filename too long")
-        );
-    }
+  const extension = path.extname(filename).toLowerCase();
 
-    const extension =
-        path.extname(filename).toLowerCase();
+  const expectedMime = ALLOWED_TYPES[extension];
 
-    const expectedMime =
-        ALLOWED_TYPES[extension];
+  if (!expectedMime) {
+    return cb(new Error('Unsupported file type'));
+  }
 
-    if (!expectedMime) {
-        return cb(
-            new Error("Unsupported file type")
-        );
-    }
+  if (file.mimetype !== expectedMime) {
+    return cb(new Error('File extension and MIME type do not match'));
+  }
 
-    if (file.mimetype !== expectedMime) {
-        return cb(
-            new Error(
-                "File extension and MIME type do not match"
-            )
-        );
-    }
-
-    cb(null, true);
+  cb(null, true);
 };
 
 const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
 
-    destination: (req, file, cb) => {
+  filename: (req, file, cb) => {
+    const original = path.basename(file.originalname || 'file');
 
-        cb(null, uploadDir);
+    const extension = path.extname(original).toLowerCase();
 
-    },
+    const base = path.basename(original, path.extname(original));
 
-    filename: (req, file, cb) => {
+    const safeBase = base.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100);
 
-        const original =
-            path.basename(
-                file.originalname || "file"
-            );
+    const safeExtension = extension.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 20);
 
-        const extension =
-            path.extname(original)
-                .toLowerCase();
+    const filename = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}-${safeBase || 'file'}${safeExtension}`;
 
-        const base =
-            path.basename(
-                original,
-                path.extname(original)
-            );
-
-        const safeBase =
-            base
-                .replace(
-                    /[^a-zA-Z0-9_-]/g,
-                    "_"
-                )
-                .slice(0, 100);
-
-        const safeExtension =
-            extension
-                .replace(
-                    /[^a-zA-Z0-9.]/g,
-                    ""
-                )
-                .slice(0, 20);
-
-        const filename =
-            `${Date.now()}-${Math.random()
-                .toString(36)
-                .slice(2, 10)}-${safeBase || "file"}${safeExtension}`;
-
-        cb(null, filename);
-    }
+    cb(null, filename);
+  },
 });
 
 export const upload = multer({
+  storage,
 
-    storage,
+  fileFilter,
 
-    fileFilter,
-
-    limits: {
-        fileSize: 10 * 1024 * 1024,
-        files: 1
-    }
-
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 1,
+  },
 });

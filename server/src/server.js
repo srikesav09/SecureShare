@@ -1,15 +1,15 @@
-import dotenv from "dotenv";
-import app from "./app.js";
-import connectDatabase from "./config/database.js";
+import dotenv from 'dotenv';
+import app from './app.js';
+import connectDatabase from './config/database.js';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
-const startServer = async ()=>{
+const startServer = async () => {
   await connectDatabase();
 
-  app.listen(PORT,()=>{
+  app.listen(PORT, () => {
     console.log(`SecureShare Server running on port ${PORT}`);
   });
 };

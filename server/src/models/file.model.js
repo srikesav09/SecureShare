@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const fileSchema = new mongoose.Schema(
   {
@@ -32,26 +32,26 @@ const fileSchema = new mongoose.Schema(
 
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
     encrypted: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     iv: {
-        type: String
+      type: String,
     },
 
     hash: {
-        type: String
-    }
+      type: String,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export default mongoose.model("File", fileSchema);
+export default mongoose.model('File', fileSchema);

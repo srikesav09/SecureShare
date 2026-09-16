@@ -1,11 +1,10 @@
-import rateLimit from "express-rate-limit";
+import rateLimit from 'express-rate-limit';
 
 // =====================================================
 // Global configuration
 // =====================================================
 
-const windowMinutes =
-    Number(process.env.RATE_LIMIT_WINDOW_MINUTES) || 15;
+const windowMinutes = Number(process.env.RATE_LIMIT_WINDOW_MINUTES) || 15;
 
 const windowMs = windowMinutes * 60 * 1000;
 
@@ -14,13 +13,13 @@ const windowMs = windowMinutes * 60 * 1000;
 // =====================================================
 
 const getLimit = (envName, fallback) => {
-    const value = Number(process.env[envName]);
+  const value = Number(process.env[envName]);
 
-    if (!Number.isFinite(value) || value <= 0) {
-        return fallback;
-    }
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
 
-    return value;
+  return value;
 };
 
 // =====================================================
@@ -29,21 +28,21 @@ const getLimit = (envName, fallback) => {
 // =====================================================
 
 export const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutes
 
-    max: 10,
+  max: 10,
 
-    standardHeaders: true,
-    legacyHeaders: false,
+  standardHeaders: true,
+  legacyHeaders: false,
 
-    message: {
-        success: false,
-        message: "Too many login attempts. Please try again later."
-    },
+  message: {
+    success: false,
+    message: 'Too many login attempts. Please try again later.',
+  },
 
-    handler: (req, res, next, options) => {
-        return res.status(429).json(options.message);
-    }
+  handler: (req, res, next, options) => {
+    return res.status(429).json(options.message);
+  },
 });
 
 // =====================================================
@@ -52,22 +51,21 @@ export const loginLimiter = rateLimit({
 // =====================================================
 
 export const registerLimiter = rateLimit({
-    windowMs,
+  windowMs,
 
-    max: getLimit("REGISTER_RATE_LIMIT", 5),
+  max: getLimit('REGISTER_RATE_LIMIT', 5),
 
-    standardHeaders: true,
-    legacyHeaders: false,
+  standardHeaders: true,
+  legacyHeaders: false,
 
-    message: {
-        success: false,
-        message:
-            "Too many registrations. Please try again later.",
-    },
+  message: {
+    success: false,
+    message: 'Too many registrations. Please try again later.',
+  },
 
-    validate: {
-        trustProxy: false,
-    },
+  validate: {
+    trustProxy: false,
+  },
 });
 
 // =====================================================
@@ -76,22 +74,21 @@ export const registerLimiter = rateLimit({
 // =====================================================
 
 export const uploadLimiter = rateLimit({
-    windowMs,
+  windowMs,
 
-    max: getLimit("UPLOAD_RATE_LIMIT", 20),
+  max: getLimit('UPLOAD_RATE_LIMIT', 20),
 
-    standardHeaders: true,
-    legacyHeaders: false,
+  standardHeaders: true,
+  legacyHeaders: false,
 
-    message: {
-        success: false,
-        message:
-            "Upload limit exceeded. Please try again later.",
-    },
+  message: {
+    success: false,
+    message: 'Upload limit exceeded. Please try again later.',
+  },
 
-    validate: {
-        trustProxy: false,
-    },
+  validate: {
+    trustProxy: false,
+  },
 });
 
 // =====================================================
@@ -100,22 +97,21 @@ export const uploadLimiter = rateLimit({
 // =====================================================
 
 export const shareLimiter = rateLimit({
-    windowMs,
+  windowMs,
 
-    max: getLimit("SHARE_RATE_LIMIT", 30),
+  max: getLimit('SHARE_RATE_LIMIT', 30),
 
-    standardHeaders: true,
-    legacyHeaders: false,
+  standardHeaders: true,
+  legacyHeaders: false,
 
-    message: {
-        success: false,
-        message:
-            "Too many download attempts. Please try again later.",
-    },
+  message: {
+    success: false,
+    message: 'Too many download attempts. Please try again later.',
+  },
 
-    validate: {
-        trustProxy: false,
-    },
+  validate: {
+    trustProxy: false,
+  },
 });
 
 // =====================================================
@@ -124,20 +120,19 @@ export const shareLimiter = rateLimit({
 // =====================================================
 
 export const createShareLimiter = rateLimit({
-    windowMs,
+  windowMs,
 
-    max: getLimit("CREATE_SHARE_RATE_LIMIT", 20),
+  max: getLimit('CREATE_SHARE_RATE_LIMIT', 20),
 
-    standardHeaders: true,
-    legacyHeaders: false,
+  standardHeaders: true,
+  legacyHeaders: false,
 
-    message: {
-        success: false,
-        message:
-            "Share creation limit exceeded. Please try again later.",
-    },
+  message: {
+    success: false,
+    message: 'Share creation limit exceeded. Please try again later.',
+  },
 
-    validate: {
-        trustProxy: false,
-    },
+  validate: {
+    trustProxy: false,
+  },
 });

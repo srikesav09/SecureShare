@@ -1,16 +1,16 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const shareSchema = new mongoose.Schema(
   {
     file: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "File",
+      ref: 'File',
       required: true,
     },
 
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
@@ -36,34 +36,31 @@ const shareSchema = new mongoose.Schema(
     },
 
     downloadCount: {
-    type: Number,
-    required: true,
-    default: 0,
-    min: 0,
-    validate: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+      validate: {
         validator: Number.isInteger,
-        message: "downloadCount must be a non-negative integer"
-    }
-  },
+        message: 'downloadCount must be a non-negative integer',
+      },
+    },
 
-  maxDownloads: {
-    type: Number,
-    default: null,
-    min: 1,
-    validate: {
+    maxDownloads: {
+      type: Number,
+      default: null,
+      min: 1,
+      validate: {
         validator: function (value) {
-            return (
-                value === null ||
-                Number.isInteger(value)
-            );
+          return value === null || Number.isInteger(value);
         },
-        message: "maxDownloads must be a positive integer"
-    }
-  },
+        message: 'maxDownloads must be a positive integer',
+      },
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export default mongoose.model("Share", shareSchema);
+export default mongoose.model('Share', shareSchema);

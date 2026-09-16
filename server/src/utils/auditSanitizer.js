@@ -1,13 +1,13 @@
 const SENSITIVE_KEYS = new Set([
-  "password",
-  "passwordHash",
-  "token",
-  "accessToken",
-  "refreshToken",
-  "authorization",
-  "cookie",
-  "secret",
-  "apiKey"
+  'password',
+  'passwordHash',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'authorization',
+  'cookie',
+  'secret',
+  'apiKey',
 ]);
 
 const sanitizeValue = (value) => {
@@ -15,15 +15,12 @@ const sanitizeValue = (value) => {
     return value.map(sanitizeValue);
   }
 
-  if (
-    value !== null &&
-    typeof value === "object"
-  ) {
+  if (value !== null && typeof value === 'object') {
     const sanitized = {};
 
     for (const [key, val] of Object.entries(value)) {
       if (SENSITIVE_KEYS.has(key)) {
-        sanitized[key] = "[REDACTED]";
+        sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeValue(val);
       }
@@ -37,12 +34,11 @@ const sanitizeValue = (value) => {
 
 export const sanitizeAuditLog = (log) => {
   const sanitized = {
-    ...log
+    ...log,
   };
 
   if (sanitized.details) {
-    sanitized.details =
-      sanitizeValue(sanitized.details);
+    sanitized.details = sanitizeValue(sanitized.details);
   }
 
   return sanitized;

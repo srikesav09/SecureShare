@@ -3,17 +3,13 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
-} from "@aws-sdk/client-s3";
+} from '@aws-sdk/client-s3';
 
 const s3 = new S3Client({
-  region: process.env.AWS_REGION
+  region: process.env.AWS_REGION,
 });
 
-export const uploadToS3 = async ({
-  key,
-  body,
-  contentType,
-}) => {
+export const uploadToS3 = async ({ key, body, contentType }) => {
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET,
     Key: key,

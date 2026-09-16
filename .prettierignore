@@ -1,0 +1,7 @@
+**/.npm-cache/
+**/node_modules/
+**/dist/
+**/coverage/
+**/uploads/
+*.zip
+*.lock
