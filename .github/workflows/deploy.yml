@@ -63,7 +63,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-south-1' }}
 
       - name: Deploy through AWS SSM
         shell: bash
@@ -72,11 +72,11 @@ jobs:
             --instance-ids i-0700bb9b4bc846f3b \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "cd SecureShare",
-              "sudo chown -R ubuntu:ubuntu SecureShare",
-              "sudo -u ubuntu -H bash -lc 'cd SecureShare && git pull origin main'",
-              "sudo -u ubuntu -H bash -lc 'cd SecureShare/client && npm ci && npm run build'",
-              "sudo -u ubuntu -H bash -lc 'cd SecureShare/server && npm ci --omit=dev'",
+              "sudo chown -R ubuntu:ubuntu /home/ubuntu/SecureShare",
+              "sudo -u ubuntu -H git -C /home/ubuntu/SecureShare pull --ff-only origin main",
+              "sudo -u ubuntu -H npm --prefix /home/ubuntu/SecureShare/client ci",
+              "sudo -u ubuntu -H npm --prefix /home/ubuntu/SecureShare/client run build",
+              "sudo -u ubuntu -H npm --prefix /home/ubuntu/SecureShare/server ci --omit=dev",
               "sudo -u ubuntu -H pm2 restart secureshare",
               "sudo -u ubuntu -H pm2 save"
             ]' \
