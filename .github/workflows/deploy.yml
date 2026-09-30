@@ -72,11 +72,11 @@ jobs:
             --instance-ids i-0700bb9b4bc846f3b \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "cd /home/ubuntu/SecureShare",
-              "sudo chown -R ubuntu:ubuntu /home/ubuntu/SecureShare",
-              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare && git pull origin main'",
-              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare/client && npm ci && npm run build'",
-              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare/server && npm ci --omit=dev'",
+              "cd SecureShare",
+              "sudo chown -R ubuntu:ubuntu SecureShare",
+              "sudo -u ubuntu -H bash -lc 'cd SecureShare && git pull origin main'",
+              "sudo -u ubuntu -H bash -lc 'cd SecureShare/client && npm ci && npm run build'",
+              "sudo -u ubuntu -H bash -lc 'cd SecureShare/server && npm ci --omit=dev'",
               "sudo -u ubuntu -H pm2 restart secureshare",
               "sudo -u ubuntu -H pm2 save"
             ]' \
