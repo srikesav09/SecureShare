@@ -16,6 +16,7 @@ export const createShareLink = async (
   userId,
   maxDownloads = null,
   password = null,
+  expiresInHours = 24,
 ) => {
   if (password !== null && password !== undefined && typeof password !== 'string') {
     throw new AppError('Password must be a string', 400);
@@ -27,6 +28,10 @@ export const createShareLink = async (
 
   if (maxDownloads !== null && (!Number.isInteger(maxDownloads) || maxDownloads < 1)) {
     throw new AppError('maxDownloads must be a positive integer', 400);
+  }
+
+  if (!Number.isInteger(expiresInHours) || expiresInHours < 1 || expiresInHours > 168) {
+    throw new AppError('Share expiry must be between 1 and 168 hours', 400);
   }
 
   if (!mongoose.Types.ObjectId.isValid(fileId)) {
@@ -46,7 +51,7 @@ export const createShareLink = async (
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
 
   let passwordHash = null;
 

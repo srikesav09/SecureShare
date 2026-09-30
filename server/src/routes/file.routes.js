@@ -6,6 +6,7 @@ import { upload } from '../middleware/upload.middleware.js';
 
 import {
   uploadFile,
+  importFromShare,
   getMyFiles,
   downloadFile,
   deleteFile,
@@ -50,6 +51,8 @@ router.post(
 );
 
 router.get('/', authenticate, getMyFiles);
+
+router.post('/import-share', authenticate, uploadLimiter, importFromShare);
 
 router.get('/:id/download', authenticate, downloadFile);
 

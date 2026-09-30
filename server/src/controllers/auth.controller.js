@@ -1,4 +1,4 @@
-import { registerUser, loginUser, getProfile } from '../services/auth.service.js';
+import { registerUser, loginUser, getProfile, changePassword } from '../services/auth.service.js';
 
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -15,6 +15,17 @@ export const login = asyncHandler(async (req, res) => {
 
 export const profile = asyncHandler(async (req, res) => {
   const result = await getProfile(req.user.id);
+
+  return res.status(200).json(result);
+});
+
+export const updatePassword = asyncHandler(async (req, res) => {
+  const result = await changePassword(
+    req,
+    req.user.id,
+    req.body.currentPassword,
+    req.body.newPassword,
+  );
 
   return res.status(200).json(result);
 });

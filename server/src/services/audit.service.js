@@ -17,7 +17,7 @@ export const createAuditLog = async ({
 
     const userAgent = req?.headers['user-agent'] || '';
 
-    const audit = await Audit.create({
+    await Audit.create({
       user,
       action,
       resourceType,

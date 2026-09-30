@@ -93,7 +93,7 @@ export const validateFileSignature = async (req, res, next) => {
     req.file.mimetype = signature.mimeType;
 
     next();
-  } catch (error) {
+  } catch {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }

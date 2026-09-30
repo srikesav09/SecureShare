@@ -1,6 +1,3 @@
-import mongoose from 'mongoose';
-
-import { AUDIT_ACTIONS, AUDIT_STATUS } from '../utils/constants.js';
 import AppError from '../utils/AppError.js';
 
 export const requireAdmin = (req, res, next) => {

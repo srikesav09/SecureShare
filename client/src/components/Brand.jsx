@@ -1,0 +1,41 @@
+function SecureShareMark({ size = 36 }) {
+  return (
+    <svg
+      className="secure-share-mark"
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+    >
+      <rect width="48" height="48" rx="14" fill="currentColor" />
+      <path
+        d="M24 10.5 35 15v8.7c0 7.2-4.7 11.9-11 14.8-6.3-2.9-11-7.6-11-14.8V15l11-4.5Z"
+        fill="white"
+        fillOpacity=".96"
+      />
+      <path d="M24 17v13m-5-5.5h10" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx="24" cy="24" r="2.4" fill="currentColor" />
+      <path
+        d="m28.2 19.4 2.8-2.8m0 0v2.3m0-2.3h-2.3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function Brand() {
+  return (
+    <div className="brand">
+      <span className="brand-mark">
+        <SecureShareMark />
+      </span>
+      <span>SecureShare</span>
+    </div>
+  );
+}
+
+export { Brand, SecureShareMark };

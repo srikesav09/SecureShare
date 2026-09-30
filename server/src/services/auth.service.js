@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 import { generateToken } from '../utils/jwt.js';
+import { createAuditLog } from './audit.service.js';
+import { AUDIT_ACTIONS, AUDIT_STATUS, RESOURCE_TYPES } from '../utils/constants.js';
 
 export const registerUser = async (userData) => {
   const { name, email, password } = userData;
@@ -71,4 +73,41 @@ export const getProfile = async (userId) => {
     message: 'Profile fetched successfully',
     data: user,
   };
+};
+
+export const changePassword = async (req, userId, currentPassword, newPassword) => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  const currentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!currentPasswordValid) {
+    await createAuditLog({
+      req,
+      user: userId,
+      action: AUDIT_ACTIONS.PASSWORD_CHANGE,
+      resourceType: RESOURCE_TYPES.USER,
+      resourceId: userId,
+      status: AUDIT_STATUS.FAILED,
+      details: { reason: 'Current password mismatch' },
+    });
+    throw new AppError('Current password is incorrect', 401);
+  }
+
+  if (currentPassword === newPassword) {
+    throw new AppError('New password must be different from the current password', 400);
+  }
+
+  user.password = await bcrypt.hash(newPassword, 12);
+  await user.save();
+
+  await createAuditLog({
+    req,
+    user: userId,
+    action: AUDIT_ACTIONS.PASSWORD_CHANGE,
+    resourceType: RESOURCE_TYPES.USER,
+    resourceId: userId,
+    status: AUDIT_STATUS.SUCCESS,
+  });
+
+  return { success: true, message: 'Password changed successfully' };
 };

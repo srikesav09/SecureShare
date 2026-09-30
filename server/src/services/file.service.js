@@ -1,6 +1,9 @@
 import File from '../models/file.model.js';
+import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 import mongoose from 'mongoose';
 
 import {
@@ -43,6 +46,15 @@ export const saveFile = async (req, file, user) => {
   let uploadedToS3 = false;
 
   try {
+    const owner = await User.findById(user.id).select('storageUsed storageLimit');
+    if (!owner) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (owner.storageUsed + file.size > owner.storageLimit) {
+      throw new AppError('Storage limit exceeded', 413);
+    }
+
     const hash = generateHash(file.path);
 
     encryption = encryptFile(file.path);
@@ -78,6 +90,8 @@ export const saveFile = async (req, file, user) => {
 
       encrypted: true,
     });
+
+    await User.updateOne({ _id: user.id }, { $inc: { storageUsed: file.size } });
 
     if (encryption.encryptedPath && fs.existsSync(encryption.encryptedPath)) {
       fs.unlinkSync(encryption.encryptedPath);
@@ -145,6 +159,27 @@ export const getFiles = async (userId) => {
 
     data: safeFiles,
   };
+};
+
+export const importSharedFile = async (req, sharedFile, user) => {
+  const temporaryPath = path.join('uploads', `shared-${crypto.randomUUID()}`);
+  fs.writeFileSync(temporaryPath, sharedFile.buffer);
+
+  try {
+    return await saveFile(
+      req,
+      {
+        path: temporaryPath,
+        filename: path.basename(temporaryPath),
+        originalname: sharedFile.metadata.originalName,
+        mimetype: sharedFile.metadata.mimeType,
+        size: sharedFile.buffer.length,
+      },
+      user,
+    );
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
+  }
 };
 
 export const downloadFileService = async (req, fileId, userId) => {
@@ -243,6 +278,11 @@ export const deleteFileService = async (req, fileId, userId) => {
       console.error('S3 delete failed:', error.message);
     }
   }
+
+  await User.updateOne(
+    { _id: userId },
+    { $inc: { storageUsed: -deletedFile.size } },
+  );
 
   try {
     await createAuditLog({

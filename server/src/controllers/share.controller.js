@@ -9,6 +9,7 @@ export const shareFile = asyncHandler(async (req, res) => {
     req.user.id,
     req.body.maxDownloads,
     req.body.password,
+    req.body.expiresInHours,
   );
 
   res.status(201).json(result);

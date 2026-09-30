@@ -45,6 +45,20 @@ export const loginLimiter = rateLimit({
   },
 });
 
+export const passwordChangeLimiter = rateLimit({
+  windowMs,
+  max: getLimit('PASSWORD_CHANGE_RATE_LIMIT', 5),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many password changes. Please try again later.',
+  },
+  validate: {
+    trustProxy: false,
+  },
+});
+
 // =====================================================
 // REGISTER RATE LIMITER
 // Prevents account creation abuse
