@@ -279,10 +279,7 @@ export const deleteFileService = async (req, fileId, userId) => {
     }
   }
 
-  await User.updateOne(
-    { _id: userId },
-    { $inc: { storageUsed: -deletedFile.size } },
-  );
+  await User.updateOne({ _id: userId }, { $inc: { storageUsed: -deletedFile.size } });
 
   try {
     await createAuditLog({

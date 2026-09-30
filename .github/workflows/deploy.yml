@@ -73,14 +73,12 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "cd /home/ubuntu/SecureShare",
-              "git pull origin main",
-              "cd /home/ubuntu/SecureShare/client",
-              "npm ci",
-              "npm run build",
-              "cd /home/ubuntu/SecureShare/server",
-              "npm ci --omit=dev",
-              "pm2 restart secureshare",
-              "pm2 save"
+              "sudo chown -R ubuntu:ubuntu /home/ubuntu/SecureShare",
+              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare && git pull origin main'",
+              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare/client && npm ci && npm run build'",
+              "sudo -u ubuntu -H bash -lc 'cd /home/ubuntu/SecureShare/server && npm ci --omit=dev'",
+              "sudo -u ubuntu -H pm2 restart secureshare",
+              "sudo -u ubuntu -H pm2 save"
             ]' \
             --query "Command.CommandId" \
             --output text)

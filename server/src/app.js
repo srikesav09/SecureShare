@@ -25,9 +25,7 @@ const allowedOrigins = new Set([
 ]);
 
 const isAllowedOrigin = (origin) =>
-  !origin ||
-  allowedOrigins.has(origin) ||
-  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+  !origin || allowedOrigins.has(origin) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 
 app.use(
   cors({

@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 const configuredBaseUrl = import.meta.env.VITE_API_URL || 'https://api.srikesav.site';
-const baseURL = configuredBaseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+export const API_ORIGIN = configuredBaseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
 
-const api = axios.create({ baseURL });
+const api = axios.create({ baseURL: API_ORIGIN });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('secureshare_token');

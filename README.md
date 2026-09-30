@@ -6,7 +6,7 @@ SecureShare is a private file-sharing platform. Authenticated users can upload f
 
 - User registration, login, and protected profiles.
 - File upload with type/signature validation.
-- File listing, metadata preview, download, and deletion.
+- File listing, in-app preview for browser-supported files, download, and deletion.
 - Expiring or revocable share links.
 - MongoDB persistence and AWS S3 file storage.
 - Encryption, rate limiting, security headers, request IDs, CORS restrictions, and centralized errors.
@@ -88,6 +88,7 @@ The client removes a trailing `/api` automatically, so either `http://localhost:
 ## API overview
 
 The local API base is `http://localhost:5000/api`. Production uses `https://api.srikesav.site/api`.
+The production web app is served by Vercel at `https://secure-share-lime.vercel.app`.
 
 | Method | Endpoint                  | Purpose                       | Access        |
 | ------ | ------------------------- | ----------------------------- | ------------- |
@@ -127,7 +128,7 @@ Use `npm run format` in either package to format its source files. S3-dependent 
 Pushing to `main` starts [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which:
 
 1. Installs server dependencies and runs tests.
-2. Builds and deploys the client to Vercel.
+2. Builds the client. Vercel deploys the client automatically from the connected GitHub repository.
 3. Pulls the repository on EC2, rebuilds the client, installs production server dependencies, and restarts PM2.
 4. Checks `https://api.srikesav.site/api/health`.
 
@@ -138,7 +139,7 @@ Production URLs:
 
 Set `FRONTEND_URL` on the EC2 server to the Vercel production URL (and any comma-separated custom frontend domains) so browser API requests and file downloads pass CORS validation.
 
-Keep deployment credentials in GitHub Secrets. The workflow expects `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the frontend, plus the existing AWS secrets for EC2. See [`docs/deployment/deployment-guide.md`](docs/deployment/deployment-guide.md).
+Keep deployment credentials in GitHub Secrets. The workflow uses the AWS credentials and region needed for EC2 Systems Manager deployment. Vercel uses its native GitHub integration for the frontend. See [`docs/deployment/deployment-guide.md`](docs/deployment/deployment-guide.md).
 
 ## Security and contributing
 

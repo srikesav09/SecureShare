@@ -19,4 +19,8 @@ Set `VITE_API_URL` in `client/.env` to override the default API URL:
 VITE_API_URL=http://localhost:5000
 ```
 
-The production client uses `https://api.srikesav.site` by default.
+The production client uses `https://api.srikesav.site` by default and is deployed at
+`https://secure-share-lime.vercel.app` through Vercel's GitHub integration.
+
+File previews open inside the current SecureShare page in an accessible preview dialog. Images,
+videos, audio, and PDFs render in the dialog; other file types can be downloaded from it.

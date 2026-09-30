@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { API_ORIGIN } from '../services/api';
 import { appRoutes } from '../routes/routeConfig';
 import { Brand } from '../components/Brand';
 import Icon from '../components/Icon';
@@ -119,6 +119,60 @@ function ShareModal({ target, onClose, onCreated, notify }) {
   );
 }
 
+function PreviewModal({ file, url, onClose, onDownload }) {
+  const mimeType = file.mimeType || 'application/octet-stream';
+  const isImage = mimeType.startsWith('image/');
+  const isVideo = mimeType.startsWith('video/');
+  const isAudio = mimeType.startsWith('audio/');
+  const isPdf = mimeType === 'application/pdf';
+
+  return (
+    <div
+      className="modal-backdrop preview-backdrop"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="preview-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="preview-title"
+      >
+        <div className="preview-header">
+          <div>
+            <span className="eyebrow">File preview</span>
+            <h2 id="preview-title">{file.originalName}</h2>
+          </div>
+          <button className="modal-close" aria-label="Close preview" onClick={onClose}>
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+        <div className="preview-content">
+          {isImage && <img src={url} alt={file.originalName} className="preview-media" />}
+          {isVideo && <video src={url} className="preview-media" controls />}
+          {isAudio && <audio src={url} className="preview-audio" controls />}
+          {isPdf && (
+            <iframe src={url} title={`Preview of ${file.originalName}`} className="preview-frame" />
+          )}
+          {!isImage && !isVideo && !isAudio && !isPdf && (
+            <div className="preview-unavailable">
+              <Icon name="file" size={30} />
+              <strong>This file type cannot be previewed in the browser.</strong>
+              <p>Download it to open it with the appropriate application.</p>
+            </div>
+          )}
+        </div>
+        <div className="preview-footer">
+          <span>{mimeType}</span>
+          <button className="secondary-button" onClick={() => onDownload(file)}>
+            <Icon name="download" size={16} /> Download
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function DashboardPage({ user, onLogout }) {
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -128,6 +182,7 @@ function DashboardPage({ user, onLogout }) {
   const [dragging, setDragging] = useState(false);
   const [toast, setToast] = useState('');
   const [shareTarget, setShareTarget] = useState(null);
+  const [previewState, setPreviewState] = useState(null);
   const [sessionShares, setSessionShares] = useState([]);
   const [search, setSearch] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('secureshare_theme') || 'light');
@@ -162,12 +217,17 @@ function DashboardPage({ user, onLogout }) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute(
-      'content',
-      theme === 'dark' ? '#10201f' : '#39746d',
-    );
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#10201f' : '#39746d');
     localStorage.setItem('secureshare_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    return () => {
+      if (previewState) URL.revokeObjectURL(previewState.url);
+    };
+  }, [previewState]);
 
   const notify = (message) => {
     setToast(message);
@@ -191,19 +251,14 @@ function DashboardPage({ user, onLogout }) {
   };
 
   const download = async (file, preview = false) => {
-    const previewWindow = preview ? window.open('', '_blank', 'noopener,noreferrer') : null;
-
-    if (preview && !previewWindow) {
-      notify('Allow pop-ups to preview this file');
-      return;
-    }
-
     try {
       const response = await api.get(`/api/files/${file.id}/download`, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
       if (preview) {
-        previewWindow.location.href = url;
-        window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+        setPreviewState((current) => {
+          if (current) URL.revokeObjectURL(current.url);
+          return { file, url };
+        });
       } else {
         const link = document.createElement('a');
         link.href = url;
@@ -212,9 +267,13 @@ function DashboardPage({ user, onLogout }) {
         URL.revokeObjectURL(url);
       }
     } catch {
-      previewWindow?.close();
       notify(preview ? 'Couldn’t preview that file' : 'Couldn’t download that file');
     }
+  };
+
+  const closePreview = () => {
+    if (previewState) URL.revokeObjectURL(previewState.url);
+    setPreviewState(null);
   };
 
   const remove = async (file) => {
@@ -369,7 +428,12 @@ function DashboardPage({ user, onLogout }) {
             >
               <Icon name="settings" size={16} />
             </button>
-            <a className="help-link" href="https://github.com/srikesav09" target="_blank" rel="noreferrer">
+            <a
+              className="help-link"
+              href="https://github.com/srikesav09"
+              target="_blank"
+              rel="noreferrer"
+            >
               Need help? ↗
             </a>
             <button className="sign-out" onClick={onLogout}>
@@ -436,7 +500,7 @@ function DashboardPage({ user, onLogout }) {
                   <input
                     required
                     type="url"
-                    placeholder="https://api.srikesav.site/share/..."
+                    placeholder={`${API_ORIGIN}/share/...`}
                     value={importForm.shareLink}
                     onChange={(event) =>
                       setImportForm({ ...importForm, shareLink: event.target.value })
@@ -549,7 +613,11 @@ function DashboardPage({ user, onLogout }) {
                           setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
                         }
                       />
-                      <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} aria-label="Show current password">
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        aria-label="Show current password"
+                      >
                         <Icon name="eye" size={17} />
                       </button>
                     </span>
@@ -566,12 +634,18 @@ function DashboardPage({ user, onLogout }) {
                           setPasswordForm({ ...passwordForm, newPassword: event.target.value })
                         }
                       />
-                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} aria-label="Show new password">
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label="Show new password"
+                      >
                         <Icon name="eye" size={17} />
                       </button>
                     </span>
                   </label>
-                  <small className="password-hint">At least 8 characters. Avoid reusing another password.</small>
+                  <small className="password-hint">
+                    At least 8 characters. Avoid reusing another password.
+                  </small>
                   {passwordState.message && (
                     <div className={`form-message ${passwordState.success ? 'success' : ''}`}>
                       {passwordState.message}
@@ -604,6 +678,14 @@ function DashboardPage({ user, onLogout }) {
           <Icon name="check" size={16} />
           {toast}
         </div>
+      )}
+      {previewState && (
+        <PreviewModal
+          file={previewState.file}
+          url={previewState.url}
+          onClose={closePreview}
+          onDownload={download}
+        />
       )}
       {shareTarget && (
         <ShareModal

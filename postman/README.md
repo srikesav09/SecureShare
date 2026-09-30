@@ -1,4 +1,4 @@
-# 🚀 SecureShare API Collection
+# SecureShare API collection
 
 This folder contains the Postman collection and environments used to test the SecureShare backend APIs.
 
@@ -7,7 +7,8 @@ This folder contains the Postman collection and environments used to test the Se
 ## Files
 
 - `SecureShare.postman_collection.json`
-- `Local.postman_environment.json`
+- `local.postman_environment.json`
+- `production.postman_environment.json`
 
 ---
 
@@ -21,11 +22,13 @@ This folder contains the Postman collection and environments used to test the Se
 
 ## Environment
 
-Select the **local** environment.
+Select either the **local** or **production** environment.
 
 | Variable | Value |
 |----------|--------------------------|
 | baseUrl | http://localhost:5000 |
+
+The production environment uses `https://api.srikesav.site`.
 
 ---
 
@@ -35,3 +38,4 @@ Select the **local** environment.
 cd server
 npm install
 npm run dev
+```
