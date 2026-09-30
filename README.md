@@ -22,7 +22,7 @@ SecureShare is a private file-sharing platform. Authenticated users can upload f
 | Storage    | Amazon S3                                             |
 | Security   | Zod, Helmet, CORS, rate limiting, Multer              |
 | Testing    | Node.js test runner, Supertest, MongoDB Memory Server |
-| Deployment | GitHub Actions, AWS EC2, cPanel FTPS                  |
+| Deployment | GitHub Actions, Vercel, AWS EC2                       |
 
 ## Project structure
 
@@ -127,17 +127,16 @@ Use `npm run format` in either package to format its source files. S3-dependent 
 Pushing to `main` starts [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which:
 
 1. Installs server dependencies and runs tests.
-2. Builds the client and creates `client/secureshare-ui-dist.zip`.
+2. Builds and deploys the client to Vercel.
 3. Pulls the repository on EC2, rebuilds the client, installs production server dependencies, and restarts PM2.
 4. Checks `https://api.srikesav.site/api/health`.
-5. Deploys the client to cPanel over explicit FTPS when `CPANEL_DEPLOY` is set to `true`.
 
 Production URLs:
 
-- Client: [https://secureshare.srikesav.site](https://secureshare.srikesav.site)
+- Client: Configure `secureshare.srikesav.site` as a custom domain in Vercel.
 - API health: [https://api.srikesav.site/api/health](https://api.srikesav.site/api/health)
 
-Keep deployment credentials in GitHub Secrets. See [`docs/deployment/deployment-guide.md`](docs/deployment/deployment-guide.md).
+Keep deployment credentials in GitHub Secrets. The workflow expects `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the frontend, plus the existing AWS secrets for EC2. See [`docs/deployment/deployment-guide.md`](docs/deployment/deployment-guide.md).
 
 ## Security and contributing
 
