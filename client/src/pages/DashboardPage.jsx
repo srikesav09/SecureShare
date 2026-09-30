@@ -191,12 +191,18 @@ function DashboardPage({ user, onLogout }) {
   };
 
   const download = async (file, preview = false) => {
+    const previewWindow = preview ? window.open('', '_blank', 'noopener,noreferrer') : null;
+
+    if (preview && !previewWindow) {
+      notify('Allow pop-ups to preview this file');
+      return;
+    }
+
     try {
       const response = await api.get(`/api/files/${file.id}/download`, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
       if (preview) {
-        const windowRef = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!windowRef) notify('Allow pop-ups to preview this file');
+        previewWindow.location.href = url;
         window.setTimeout(() => URL.revokeObjectURL(url), 60000);
       } else {
         const link = document.createElement('a');
@@ -206,6 +212,7 @@ function DashboardPage({ user, onLogout }) {
         URL.revokeObjectURL(url);
       }
     } catch {
+      previewWindow?.close();
       notify(preview ? 'Couldn’t preview that file' : 'Couldn’t download that file');
     }
   };
