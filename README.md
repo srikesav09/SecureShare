@@ -133,8 +133,10 @@ Pushing to `main` starts [`.github/workflows/deploy.yml`](.github/workflows/depl
 
 Production URLs:
 
-- Client: Configure `secureshare.srikesav.site` as a custom domain in Vercel.
+- Client: [https://secure-share-lime.vercel.app](https://secure-share-lime.vercel.app)
 - API health: [https://api.srikesav.site/api/health](https://api.srikesav.site/api/health)
+
+Set `FRONTEND_URL` on the EC2 server to the Vercel production URL (and any comma-separated custom frontend domains) so browser API requests and file downloads pass CORS validation.
 
 Keep deployment credentials in GitHub Secrets. The workflow expects `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` for the frontend, plus the existing AWS secrets for EC2. See [`docs/deployment/deployment-guide.md`](docs/deployment/deployment-guide.md).
 

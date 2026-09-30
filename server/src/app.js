@@ -14,15 +14,31 @@ import adminRoutes from './routes/admin.routes.js';
 
 const app = express();
 
-const allowedOrigins = [
-  'https://secureshare.srikesav.site',
+const allowedOrigins = new Set([
+  'https://secure-share-lime.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
-];
+  ...(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean),
+]);
+
+const isAllowedOrigin = (origin) =>
+  !origin ||
+  allowedOrigins.has(origin) ||
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('CORS origin not allowed'));
+    },
+    exposedHeaders: ['Content-Disposition'],
   }),
 );
 
