@@ -8,6 +8,7 @@ import {
   analyzeStoredFile,
 } from '../services/file.service.js';
 import { downloadSharedFileService } from '../services/share.service.js';
+import { assertTrustedShareLink } from '../utils/shareLinkSecurity.js';
 
 export const uploadFile = asyncHandler(async (req, res) => {
   const result = await saveFile(req, req.file, req.user);
@@ -23,16 +24,7 @@ export const getMyFiles = asyncHandler(async (req, res) => {
 
 export const importFromShare = asyncHandler(async (req, res) => {
   const { shareLink, password } = req.body;
-  let token;
-
-  try {
-    const parsed = new URL(shareLink);
-    const segments = parsed.pathname.split('/').filter(Boolean);
-    if (segments.length !== 2 || segments[0] !== 'share') throw new Error('Invalid path');
-    token = segments[1];
-  } catch {
-    return res.status(400).json({ success: false, message: 'Enter a valid SecureShare link' });
-  }
+  const token = assertTrustedShareLink(shareLink);
 
   const sharedRequest = {
     ...req,

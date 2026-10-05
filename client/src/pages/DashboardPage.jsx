@@ -6,6 +6,7 @@ import { Brand } from '../components/Brand';
 import Icon from '../components/Icon';
 import FileList from '../components/FileList';
 import { formatBytes } from '../services/formatters';
+import AdminDashboard from './AdminDashboard';
 
 function ShareModal({ target, onClose, onCreated, notify }) {
   const [options, setOptions] = useState({ maxDownloads: '', password: '', expiresInHours: '24' });
@@ -464,16 +465,18 @@ function DashboardPage({ user, onLogout }) {
       <aside className="sidebar">
         <Brand />
         <nav>
-          {appRoutes.map((item) => (
-            <button
-              key={item.name}
-              className={active === item.name ? 'nav-item active' : 'nav-item'}
-              onClick={() => navigate(item.path)}
-            >
-              <Icon name={item.icon} />
-              {item.name}
-            </button>
-          ))}
+          {appRoutes
+            .filter((item) => item.path !== '/admin' || user?.role === 'ADMIN')
+            .map((item) => (
+              <button
+                key={item.name}
+                className={active === item.name ? 'nav-item active' : 'nav-item'}
+                onClick={() => navigate(item.path)}
+              >
+                <Icon name={item.icon} />
+                {item.name}
+              </button>
+            ))}
         </nav>
       </aside>
       <section className="workspace">
@@ -567,7 +570,9 @@ function DashboardPage({ user, onLogout }) {
             hidden
             onChange={(event) => upload(event.target.files?.[0])}
           />
-          {active === 'My files' ? (
+          {active === 'Admin dashboard' && user?.role === 'ADMIN' ? (
+            <AdminDashboard notify={notify} user={user} />
+          ) : active === 'My files' ? (
             <section className="panel page-panel">
               <div className="panel-heading">
                 <div>

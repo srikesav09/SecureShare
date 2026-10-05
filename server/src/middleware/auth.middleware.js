@@ -20,6 +20,10 @@ export const authenticate = async (req, res, next) => {
       return next(new AppError('User no longer exists', 401));
     }
 
+    if (user.isBlocked) {
+      return next(new AppError('This account is blocked. Contact an administrator.', 403));
+    }
+
     req.user = {
       id: user.id,
       role: user.role,

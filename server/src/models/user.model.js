@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       default: 'USER',
     },
 
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+
     storageUsed: {
       type: Number,
       default: 0,

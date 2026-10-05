@@ -102,6 +102,33 @@ export const analyzeBuffer = ({ buffer, originalName, mimeType, size }) => {
     });
   }
 
+  if (mimeType === 'text/plain') {
+    const links = text.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+    const suspiciousLink = links.some((link) => {
+      try {
+        const url = new URL(link);
+        return (
+          url.username ||
+          url.hostname.includes('xn--') ||
+          /^[0-9.]+$/.test(url.hostname) ||
+          /(^|[.-])(login|verify|secure|account|update)([.-]|$)/i.test(url.hostname)
+        );
+      } catch {
+        return true;
+      }
+    });
+
+    if (suspiciousLink) {
+      addFinding(findings, {
+        code: 'SUSPICIOUS_LINK_PATTERN',
+        severity: 'MEDIUM',
+        title: 'Potential phishing link pattern',
+        detail: 'The text contains a link pattern commonly used to impersonate trusted services.',
+        recommendation: 'Do not follow the link. Verify the destination through a trusted channel.',
+      });
+    }
+  }
+
   if (size > 8 * 1024 * 1024) {
     addFinding(findings, {
       code: 'LARGE_FILE',
