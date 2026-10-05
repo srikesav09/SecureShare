@@ -3,9 +3,6 @@ import mongoose from 'mongoose';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 import Audit from '../models/audit.model.js';
-import User from '../models/user.model.js';
-import File from '../models/file.model.js';
-import { getQuarantinedFiles, releaseQuarantinedFile } from '../services/file.service.js';
 
 import { AUDIT_ACTIONS, AUDIT_STATUS } from '../utils/constants.js';
 
@@ -80,29 +77,4 @@ export const getAuditLogs = asyncHandler(async (req, res) => {
       pages: Math.ceil(total / limit),
     },
   });
-});
-
-export const getDashboard = asyncHandler(async (req, res) => {
-  const [users, files, quarantined, recentLogs] = await Promise.all([
-    User.countDocuments(),
-    File.countDocuments(),
-    File.countDocuments({ 'securityAnalysis.status': 'QUARANTINED' }),
-    Audit.find().populate('user', 'name email role').sort({ createdAt: -1 }).limit(12).lean(),
-  ]);
-
-  return res.status(200).json({
-    success: true,
-    data: {
-      metrics: { users, files, quarantined },
-      recentLogs: recentLogs.map(sanitizeAuditLog),
-    },
-  });
-});
-
-export const getQuarantineQueue = asyncHandler(async (req, res) => {
-  return res.status(200).json({ success: true, data: await getQuarantinedFiles() });
-});
-
-export const releaseQuarantined = asyncHandler(async (req, res) => {
-  return res.status(200).json(await releaseQuarantinedFile(req, req.params.fileId, req.user.id));
 });

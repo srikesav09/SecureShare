@@ -1,7 +1,6 @@
 import AppError from '../utils/AppError.js';
 import { verifyToken } from '../utils/jwt.js';
 import User from '../models/user.model.js';
-import Session from '../models/session.model.js';
 
 export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -21,33 +20,10 @@ export const authenticate = async (req, res, next) => {
       return next(new AppError('User no longer exists', 401));
     }
 
-    // Tokens issued after session management was enabled carry a session ID.
-    // Legacy tokens remain valid only until their normal JWT expiry so existing
-    // users can migrate without being locked out.
-    const session = decoded.sid
-      ? await Session.findOne({
-          tokenId: decoded.sid,
-          user: user._id,
-          revokedAt: null,
-          expiresAt: { $gt: new Date() },
-        })
-      : null;
-
-    if (decoded.sid && !session) {
-      return next(new AppError('Session expired or revoked', 401));
-    }
-
-    if (session) {
-      session.lastSeenAt = new Date();
-      await session.save();
-    }
-
     req.user = {
       id: user.id,
       role: user.role,
       email: user.email,
-      sessionId: session?.id || null,
-      tokenId: session?.tokenId || null,
     };
 
     next();

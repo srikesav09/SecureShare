@@ -3,9 +3,6 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 import { generateToken } from '../utils/jwt.js';
-import Session from '../models/session.model.js';
-import crypto from 'crypto';
-import mongoose from 'mongoose';
 import { createAuditLog } from './audit.service.js';
 import { AUDIT_ACTIONS, AUDIT_STATUS, RESOURCE_TYPES } from '../utils/constants.js';
 
@@ -36,7 +33,7 @@ export const registerUser = async (userData) => {
   };
 };
 
-export const loginUser = async (req, loginData) => {
+export const loginUser = async (loginData) => {
   const { email, password } = loginData;
   const user = await User.findOne({ email });
   if (!user) {
@@ -46,23 +43,10 @@ export const loginUser = async (req, loginData) => {
   if (!isPasswordValid) {
     throw new AppError('Invalid email or password', 401);
   }
-  const tokenId = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  await Session.create({
-    user: user._id,
-    tokenId,
-    userAgent: req.headers['user-agent'] || 'Unknown device',
-    ipAddress: req.ip,
-    expiresAt,
+  const token = generateToken({
+    id: user.id,
+    role: user.role,
   });
-
-  const token = generateToken(
-    {
-      id: user.id,
-      role: user.role,
-    },
-    { tokenId },
-  );
 
   return {
     success: true,
@@ -77,59 +61,6 @@ export const loginUser = async (req, loginData) => {
       },
     },
   };
-};
-
-export const logoutSession = async (userId, sessionId) => {
-  await Session.updateOne({ _id: sessionId, user: userId }, { $set: { revokedAt: new Date() } });
-  return { success: true, message: 'Session signed out' };
-};
-
-export const getSessions = async (userId, currentSessionId) => {
-  const sessions = await Session.find({
-    user: userId,
-    revokedAt: null,
-    expiresAt: { $gt: new Date() },
-  })
-    .sort({ lastSeenAt: -1 })
-    .lean();
-
-  return {
-    success: true,
-    data: sessions.map((session) => ({
-      id: session._id,
-      device: session.userAgent,
-      ipAddress: session.ipAddress,
-      lastSeenAt: session.lastSeenAt,
-      createdAt: session.createdAt,
-      current: String(session._id) === String(currentSessionId),
-    })),
-  };
-};
-
-export const revokeAllSessions = async (userId, currentSessionId) => {
-  await Session.updateMany(
-    { user: userId, _id: { $ne: currentSessionId }, revokedAt: null },
-    { $set: { revokedAt: new Date() } },
-  );
-  return { success: true, message: 'Other sessions revoked' };
-};
-
-export const revokeSession = async (userId, sessionId, currentSessionId) => {
-  if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-    throw new AppError('Invalid session ID', 400);
-  }
-
-  if (String(sessionId) === String(currentSessionId)) {
-    throw new AppError('Use sign out to revoke the current session', 400);
-  }
-
-  const result = await Session.updateOne(
-    { _id: sessionId, user: userId, revokedAt: null },
-    { $set: { revokedAt: new Date() } },
-  );
-
-  if (!result.matchedCount) throw new AppError('Session not found', 404);
-  return { success: true, message: 'Session revoked' };
 };
 
 export const getProfile = async (userId) => {

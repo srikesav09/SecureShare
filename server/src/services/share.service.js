@@ -47,10 +47,6 @@ export const createShareLink = async (
   if (file.owner.toString() !== userId.toString()) {
     throw new AppError('Access denied', 403);
   }
-
-  if (['QUARANTINED', 'BLOCKED'].includes(file.securityAnalysis?.status)) {
-    throw new AppError('This file cannot be shared while it is under security review', 423);
-  }
   const token = crypto.randomBytes(32).toString('hex');
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
@@ -181,10 +177,6 @@ export const downloadSharedFileService = async (req, token) => {
   const file = await File.findById(share.file);
   if (!file) {
     throw new AppError('File not found', 404);
-  }
-
-  if (['QUARANTINED', 'BLOCKED'].includes(file.securityAnalysis?.status)) {
-    throw new AppError('This file is quarantined and cannot be downloaded', 423);
   }
 
   const encryptedBuffer = await downloadFromS3(file.s3Key);

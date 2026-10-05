@@ -24,13 +24,8 @@ function App() {
   }, []);
 
   const logout = () => {
-    api
-      .post('/api/auth/logout')
-      .catch(() => undefined)
-      .finally(() => {
-        localStorage.removeItem('secureshare_token');
-        setUser(null);
-      });
+    localStorage.removeItem('secureshare_token');
+    setUser(null);
   };
 
   if (checking) {

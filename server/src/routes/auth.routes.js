@@ -1,14 +1,5 @@
 import express from 'express';
-import {
-  register,
-  login,
-  profile,
-  updatePassword,
-  logout,
-  sessions,
-  logoutOtherSessions,
-  revoke,
-} from '../controllers/auth.controller.js';
+import { register, login, profile, updatePassword } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { registerSchema, loginSchema, changePasswordSchema } from '../validators/auth.validator.js';
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -33,10 +24,5 @@ router.patch(
   validate(changePasswordSchema),
   updatePassword,
 );
-
-router.post('/logout', authenticate, logout);
-router.get('/sessions', authenticate, sessions);
-router.delete('/sessions/others', authenticate, logoutOtherSessions);
-router.delete('/sessions/:sessionId', authenticate, revoke);
 
 export default router;
