@@ -11,6 +11,7 @@ import shareRoutes from './routes/share.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import { requestId } from './middleware/requestID.middleware.js';
 import adminRoutes from './routes/admin.routes.js';
+import auditRoutes from './routes/audit.routes.js';
 
 const app = express();
 
@@ -34,7 +35,9 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error('CORS origin not allowed'));
+      // Continue without CORS headers so the API returns its normal authentication/
+      // authorization response. The browser will still block the cross-origin caller.
+      return callback(null, false);
     },
     exposedHeaders: ['Content-Disposition'],
   }),
@@ -76,6 +79,7 @@ app.use('/api/files', fileRoutes);
 app.use('/api/share', shareRoutes);
 app.use('/share', publicRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {

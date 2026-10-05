@@ -18,6 +18,7 @@ import { createAuditLog } from './audit.service.js';
 import { AUDIT_ACTIONS, AUDIT_STATUS, RESOURCE_TYPES } from '../utils/constants.js';
 
 import { uploadToS3, downloadFromS3, deleteFromS3 } from './s3.service.js';
+import { analyzeBuffer, analyzeFile } from './file-security.service.js';
 
 const sanitizeFile = (file) => {
   if (!file) {
@@ -33,6 +34,7 @@ const sanitizeFile = (file) => {
     size: source.size,
     createdAt: source.createdAt,
     updatedAt: source.updatedAt,
+    securityAnalysis: source.securityAnalysis || null,
   };
 };
 
@@ -56,6 +58,13 @@ export const saveFile = async (req, file, user) => {
     }
 
     const hash = generateHash(file.path);
+
+    const securityAnalysis = analyzeFile({
+      filePath: file.path,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
 
     encryption = encryptFile(file.path);
 
@@ -89,6 +98,8 @@ export const saveFile = async (req, file, user) => {
       hash,
 
       encrypted: true,
+
+      securityAnalysis,
     });
 
     await User.updateOne({ _id: user.id }, { $inc: { storageUsed: file.size } });
@@ -112,6 +123,10 @@ export const saveFile = async (req, file, user) => {
 
       details: {
         filename: uploadedFile.originalName,
+
+        securityStatus: securityAnalysis.status,
+
+        riskScore: securityAnalysis.riskScore,
       },
     });
 
@@ -159,6 +174,45 @@ export const getFiles = async (userId) => {
 
     data: safeFiles,
   };
+};
+
+export const analyzeStoredFile = async (req, fileId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(fileId)) {
+    throw new AppError('Invalid file ID', 400);
+  }
+
+  const file = await File.findOne({ _id: fileId, owner: userId });
+  if (!file) {
+    throw new AppError('File not found', 404);
+  }
+
+  const encryptedBuffer = await downloadFromS3(file.s3Key);
+  const decrypted = decryptBuffer(encryptedBuffer, file.iv);
+  const currentHash = generateHashFromBuffer(decrypted);
+
+  if (currentHash !== file.hash) {
+    throw new AppError('Integrity check failed', 500);
+  }
+
+  const securityAnalysis = analyzeBuffer({
+    buffer: decrypted,
+    originalName: file.originalName,
+    mimeType: file.mimeType,
+    size: file.size,
+  });
+
+  await File.updateOne({ _id: file._id }, { $set: { securityAnalysis } });
+  await createAuditLog({
+    req,
+    user: userId,
+    action: AUDIT_ACTIONS.ANALYZE_FILE,
+    resourceType: RESOURCE_TYPES.FILE,
+    resourceId: file._id,
+    status: AUDIT_STATUS.SUCCESS,
+    details: { filename: file.originalName, securityStatus: securityAnalysis.status },
+  });
+
+  return { success: true, data: { ...sanitizeFile(file), securityAnalysis } };
 };
 
 export const importSharedFile = async (req, sharedFile, user) => {
@@ -220,7 +274,7 @@ export const downloadFileService = async (req, fileId, userId) => {
 
     user: userId,
 
-    action: AUDIT_ACTIONS.DOWNLOAD_FILE,
+    action: req.query.preview === 'true' ? AUDIT_ACTIONS.PREVIEW_FILE : AUDIT_ACTIONS.DOWNLOAD_FILE,
 
     resourceType: RESOURCE_TYPES.FILE,
 

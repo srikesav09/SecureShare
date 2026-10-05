@@ -5,6 +5,7 @@ import {
   importSharedFile,
   downloadFileService,
   deleteFileService,
+  analyzeStoredFile,
 } from '../services/file.service.js';
 import { downloadSharedFileService } from '../services/share.service.js';
 
@@ -56,5 +57,10 @@ export const downloadFile = asyncHandler(async (req, res) => {
 export const deleteFile = asyncHandler(async (req, res) => {
   const result = await deleteFileService(req, req.params.id, req.user.id);
 
+  return res.status(200).json(result);
+});
+
+export const analyzeFile = asyncHandler(async (req, res) => {
+  const result = await analyzeStoredFile(req, req.params.id, req.user.id);
   return res.status(200).json(result);
 });

@@ -10,6 +10,7 @@ import {
   getMyFiles,
   downloadFile,
   deleteFile,
+  analyzeFile,
 } from '../controllers/file.controller.js';
 
 import { uploadLimiter } from '../middleware/rateLimiter.middleware.js';
@@ -53,6 +54,8 @@ router.post(
 router.get('/', authenticate, getMyFiles);
 
 router.post('/import-share', authenticate, uploadLimiter, importFromShare);
+
+router.post('/:id/security-analysis', authenticate, analyzeFile);
 
 router.get('/:id/download', authenticate, downloadFile);
 

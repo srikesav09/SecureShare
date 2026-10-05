@@ -107,6 +107,20 @@ export const downloadSharedFileService = async (req, token) => {
     throw new AppError('Share link revoked', 403);
   }
 
+  await createAuditLog({
+    req,
+    user: null,
+    action: AUDIT_ACTIONS.OPEN_SHARE,
+    resourceType: RESOURCE_TYPES.SHARE,
+    resourceId: share._id,
+    status: AUDIT_STATUS.SUCCESS,
+    details: {
+      filename:
+        (await File.findById(share.file).select('originalName').lean())?.originalName || null,
+      ownerId: share.owner.toString(),
+    },
+  });
+
   if (share.expiresAt < new Date()) {
     await createAuditLog({
       req,
@@ -181,7 +195,7 @@ export const downloadSharedFileService = async (req, token) => {
     resourceType: RESOURCE_TYPES.SHARE,
     resourceId: share._id,
     status: AUDIT_STATUS.SUCCESS,
-    details: { filename: file.originalName },
+    details: { filename: file.originalName, ownerId: share.owner.toString() },
   });
 
   return {

@@ -48,6 +48,43 @@ const fileSchema = new mongoose.Schema(
     hash: {
       type: String,
     },
+
+    securityAnalysis: {
+      status: {
+        type: String,
+        enum: ['CLEAN', 'REVIEW', 'BLOCKED'],
+        default: 'CLEAN',
+      },
+      riskScore: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 0,
+      },
+      findings: {
+        type: [
+          {
+            code: String,
+            severity: {
+              type: String,
+              enum: ['LOW', 'MEDIUM', 'HIGH'],
+            },
+            title: String,
+            detail: String,
+            recommendation: String,
+          },
+        ],
+        default: [],
+      },
+      checkedAt: {
+        type: Date,
+        default: null,
+      },
+      engine: {
+        type: String,
+        default: 'SecureShare header heuristics',
+      },
+    },
   },
   {
     timestamps: true,
