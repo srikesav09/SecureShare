@@ -173,6 +173,55 @@ function PreviewModal({ file, url, onClose, onDownload }) {
   );
 }
 
+function SecurityModal({ file, onClose }) {
+  const analysis = file.securityAnalysis;
+  const isClean = analysis?.status === 'CLEAN';
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section className="share-modal security-modal" role="dialog" aria-modal="true">
+        <button className="modal-close" aria-label="Close security analysis" onClick={onClose}>
+          <Icon name="close" size={18} />
+        </button>
+        <span className="settings-icon">
+          <Icon name={isClean ? 'checkShield' : 'alert'} size={22} />
+        </span>
+        <h2>Security analysis</h2>
+        <p className="security-summary">
+          <strong>{file.originalName}</strong> was checked with SecureShare header heuristics. This
+          is an advisory scan, not a replacement for antivirus software.
+        </p>
+        <div className={`security-result ${isClean ? 'clean' : 'review'}`}>
+          <strong>{isClean ? 'No known header risks found' : 'Review recommended'}</strong>
+          <span>Risk score: {analysis?.riskScore ?? 0}/100</span>
+        </div>
+        {analysis?.findings?.length ? (
+          <div className="security-findings">
+            {analysis.findings.map((finding) => (
+              <div className="security-finding" key={finding.code}>
+                <strong>{finding.title}</strong>
+                <p>{finding.detail}</p>
+                <small>{finding.recommendation}</small>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="security-summary">
+            No suspicious signatures or active-content patterns were detected.
+          </p>
+        )}
+        <button className="primary-button full" onClick={onClose}>
+          Done
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function DashboardPage({ user, onLogout }) {
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -183,6 +232,9 @@ function DashboardPage({ user, onLogout }) {
   const [toast, setToast] = useState('');
   const [shareTarget, setShareTarget] = useState(null);
   const [previewState, setPreviewState] = useState(null);
+  const [securityTarget, setSecurityTarget] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [sessionShares, setSessionShares] = useState([]);
   const [search, setSearch] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('secureshare_theme') || 'light');
@@ -213,6 +265,28 @@ function DashboardPage({ user, onLogout }) {
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
+
+  useEffect(() => {
+    if (active !== 'Audit activity') return undefined;
+
+    let cancelled = false;
+    setAuditLoading(true);
+    api
+      .get('/api/audit-logs?limit=50')
+      .then(({ data }) => {
+        if (!cancelled) setAuditLogs(data.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) notify('Couldn’t load audit activity');
+      })
+      .finally(() => {
+        if (!cancelled) setAuditLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -276,6 +350,31 @@ function DashboardPage({ user, onLogout }) {
     setPreviewState(null);
   };
 
+  const inspectSecurity = async (file) => {
+    if (file.securityAnalysis) {
+      setSecurityTarget(file);
+      return;
+    }
+
+    try {
+      const { data } = await api.post(`/api/files/${file.id}/security-analysis`);
+      const analyzedFile = data.data;
+      setFiles((current) =>
+        current.map((item) => (item.id === analyzedFile.id ? analyzedFile : item)),
+      );
+      setSecurityTarget(analyzedFile);
+    } catch (error) {
+      notify(error.response?.data?.message || 'Couldn’t analyze this file');
+    }
+  };
+
+  const formatAuditAction = (action) =>
+    action
+      .toLowerCase()
+      .split('_')
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(' ');
+
   const remove = async (file) => {
     if (!window.confirm(`Delete ${file.originalName}?`)) return;
     try {
@@ -298,6 +397,7 @@ function DashboardPage({ user, onLogout }) {
     onDownload: download,
     onShare: setShareTarget,
     onDelete: remove,
+    onSecurity: inspectSecurity,
   };
 
   const changePassword = async (event) => {
@@ -558,6 +658,64 @@ function DashboardPage({ user, onLogout }) {
                 </div>
               )}
             </section>
+          ) : active === 'Audit activity' ? (
+            <section className="panel page-panel audit-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Audit activity</h2>
+                  <p>Review activity recorded for your account and shared links.</p>
+                </div>
+                <span className="status-chip">Last 50 events</span>
+              </div>
+              <div className="audit-notice">
+                <Icon name="shield" size={18} />
+                <span>
+                  Share visitors stay anonymous. Their IP address and browser signature are retained
+                  for abuse investigation.
+                </span>
+              </div>
+              {auditLoading ? (
+                <div className="empty-section compact">Loading activity…</div>
+              ) : auditLogs.length ? (
+                <div className="audit-list">
+                  {auditLogs.map((log) => (
+                    <article className="audit-row" key={log._id}>
+                      <span className={`audit-icon ${log.status.toLowerCase()}`}>
+                        <Icon
+                          name={log.action.includes('FAILED') ? 'alert' : 'activity'}
+                          size={17}
+                        />
+                      </span>
+                      <div className="audit-copy">
+                        <strong>{formatAuditAction(log.action)}</strong>
+                        <small>
+                          {log.details?.filename || log.resourceType || 'Account activity'}
+                        </small>
+                      </div>
+                      <div className="audit-meta">
+                        <span
+                          className={
+                            log.status === 'SUCCESS' ? 'security-good' : 'security-warning'
+                          }
+                        >
+                          {log.status === 'SUCCESS' ? 'Successful' : 'Needs attention'}
+                        </span>
+                        <small>{new Date(log.createdAt).toLocaleString()}</small>
+                        <small>{log.ipAddress || 'Anonymous visitor'}</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-section compact">
+                  <div className="empty-icon">
+                    <Icon name="activity" size={26} />
+                  </div>
+                  <h2>No activity recorded yet</h2>
+                  <p>Uploads, previews, downloads, shares, and sign-ins will appear here.</p>
+                </div>
+              )}
+            </section>
           ) : active === 'Settings' ? (
             <section className="settings-grid">
               <div className="panel settings-card">
@@ -686,6 +844,9 @@ function DashboardPage({ user, onLogout }) {
           onClose={closePreview}
           onDownload={download}
         />
+      )}
+      {securityTarget && (
+        <SecurityModal file={securityTarget} onClose={() => setSecurityTarget(null)} />
       )}
       {shareTarget && (
         <ShareModal

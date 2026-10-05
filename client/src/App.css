@@ -523,6 +523,128 @@ button {
   color: var(--muted);
   font-size: 11px;
 }
+.file-security-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand-dark);
+  font-size: 10px;
+  font-weight: 700;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.file-security-badge.review {
+  color: #a15c14;
+}
+.file-security-badge.unscanned {
+  color: var(--muted);
+}
+.audit-list {
+  display: grid;
+  gap: 8px;
+}
+.audit-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.audit-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--brand-dark);
+  background: var(--pale);
+  border-radius: 10px;
+}
+.audit-icon.failed {
+  color: #a15c14;
+  background: #fff1dd;
+}
+.audit-copy,
+.audit-meta {
+  display: grid;
+  gap: 4px;
+}
+.audit-copy strong {
+  font-size: 13px;
+}
+.audit-copy small,
+.audit-meta small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.audit-meta {
+  justify-items: end;
+  text-align: right;
+}
+.security-warning {
+  color: #a15c14;
+  font-size: 11px;
+  font-weight: 700;
+}
+.security-summary {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.security-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.security-result.clean {
+  color: var(--brand-dark);
+  background: var(--pale);
+}
+.security-result.review {
+  color: #8b4d0d;
+  background: #fff1dd;
+}
+.security-findings {
+  display: grid;
+  gap: 10px;
+  max-height: 280px;
+  overflow: auto;
+}
+.security-finding {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.security-finding strong,
+.security-finding p,
+.security-finding small {
+  display: block;
+}
+.security-finding p,
+.security-finding small {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.audit-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  color: var(--muted);
+  background: var(--pale);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
 .file-actions {
   display: flex;
   justify-content: flex-end;

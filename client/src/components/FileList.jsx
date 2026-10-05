@@ -1,7 +1,7 @@
 import Icon from './Icon';
 import { formatBytes, formatDate } from '../services/formatters';
 
-function FileList({ files, onPreview, onDownload, onShare, onDelete }) {
+function FileList({ files, onPreview, onDownload, onShare, onDelete, onSecurity }) {
   if (!files.length) {
     return (
       <div className="empty-files">
@@ -24,6 +24,32 @@ function FileList({ files, onPreview, onDownload, onShare, onDelete }) {
           <div className="file-name">
             <strong>{file.originalName}</strong>
             <small>{formatDate(file.createdAt)}</small>
+            {file.securityAnalysis ? (
+              <button
+                type="button"
+                className={`file-security-badge ${file.securityAnalysis.status.toLowerCase()}`}
+                title={file.securityAnalysis.findings?.map((finding) => finding.title).join(', ')}
+                onClick={() => onSecurity(file)}
+              >
+                <Icon
+                  name={file.securityAnalysis.status === 'CLEAN' ? 'checkShield' : 'alert'}
+                  size={13}
+                />
+                {file.securityAnalysis.status === 'CLEAN'
+                  ? 'Security check passed'
+                  : `${file.securityAnalysis.findings?.length || 0} security warning${file.securityAnalysis.findings?.length === 1 ? '' : 's'}`}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="file-security-badge unscanned"
+                title="Run a security analysis"
+                onClick={() => onSecurity(file)}
+              >
+                <Icon name="alert" size={13} />
+                Run security check
+              </button>
+            )}
           </div>
           <span className="file-size">{formatBytes(file.size)}</span>
           <div className="file-actions">
