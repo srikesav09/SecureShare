@@ -1,9 +1,34 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState } from 'react';
 import api from './services/api';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import { SecureShareMark } from './components/Brand';
 import './App.css';
+
+class AppErrorBoundary extends Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <main className="app-recovery-screen">
+          <SecureShareMark />
+          <h1>SecureShare could not open this page</h1>
+          <p>Refresh the page after confirming that the API server is running.</p>
+          <button className="primary-button" onClick={() => window.location.reload()}>
+            Refresh SecureShare
+          </button>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,7 +44,10 @@ function App() {
     api
       .get('/api/auth/profile')
       .then(({ data }) => setUser(data.data))
-      .catch(() => localStorage.removeItem('secureshare_token'))
+      .catch(() => {
+        localStorage.removeItem('secureshare_token');
+        setUser(null);
+      })
       .finally(() => setChecking(false));
   }, []);
 
@@ -44,10 +72,14 @@ function App() {
     );
   }
 
-  return user ? (
-    <DashboardPage user={user} onLogout={logout} />
-  ) : (
-    <AuthPage onAuthenticated={setUser} />
+  return (
+    <AppErrorBoundary>
+      {user ? (
+        <DashboardPage user={user} onLogout={logout} />
+      ) : (
+        <AuthPage onAuthenticated={setUser} />
+      )}
+    </AppErrorBoundary>
   );
 }
 

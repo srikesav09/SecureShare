@@ -14,7 +14,7 @@ function AdminDashboard({ notify }) {
         api.get('/api/admin/dashboard'),
         api.get('/api/admin/quarantine'),
       ]);
-      setData(dashboard.data.data);
+      setData(dashboard.data.data || { metrics: {}, recentLogs: [] });
       setQueue(quarantine.data.data || []);
     } catch (error) {
       notify(error.response?.data?.message || 'Could not load admin dashboard');
@@ -43,17 +43,17 @@ function AdminDashboard({ notify }) {
     <section className="admin-dashboard">
       <div className="stats-row">
         <div className="stat-card">
-          <strong>{data.metrics.users || 0}</strong>
+          <strong>{data.metrics?.users || 0}</strong>
           <span>Users</span>
           <em>Registered accounts</em>
         </div>
         <div className="stat-card">
-          <strong>{data.metrics.files || 0}</strong>
+          <strong>{data.metrics?.files || 0}</strong>
           <span>Files</span>
           <em>Encrypted objects</em>
         </div>
         <div className="stat-card">
-          <strong>{data.metrics.quarantined || 0}</strong>
+          <strong>{data.metrics?.quarantined || 0}</strong>
           <span>Quarantined</span>
           <em className="security-warning">Needs review</em>
         </div>
@@ -100,13 +100,13 @@ function AdminDashboard({ notify }) {
           </div>
         </div>
         <div className="audit-list">
-          {data.recentLogs.map((log) => (
+          {(data.recentLogs || []).map((log) => (
             <article className="audit-row" key={log._id}>
               <span className="audit-icon success">
                 <Icon name="activity" size={17} />
               </span>
               <div className="audit-copy">
-                <strong>{log.action.replaceAll('_', ' ')}</strong>
+                <strong>{(log.action || 'UNKNOWN EVENT').replaceAll('_', ' ')}</strong>
                 <small>{log.details?.filename || log.resourceType || 'Account activity'}</small>
               </div>
               <div className="audit-meta">
