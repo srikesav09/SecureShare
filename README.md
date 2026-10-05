@@ -7,6 +7,9 @@ SecureShare is a private file-sharing platform. Authenticated users can upload f
 - User registration, login, and protected profiles.
 - File upload with type/signature validation.
 - File listing, in-app preview for browser-supported files, download, and deletion.
+- Per-file header and metadata risk analysis with user-facing findings.
+- Account-scoped audit activity for uploads, previews, downloads, shares, sign-ins, and failures.
+- On-demand analysis for older files that were uploaded before security analysis was enabled.
 - Expiring or revocable share links.
 - MongoDB persistence and AWS S3 file storage.
 - Encryption, rate limiting, security headers, request IDs, CORS restrictions, and centralized errors.
@@ -99,6 +102,8 @@ The production web app is served by Vercel at `https://secure-share-lime.vercel.
 | POST   | `/api/files/upload`       | Upload one file               | Authenticated |
 | GET    | `/api/files`              | List the current user’s files | Authenticated |
 | GET    | `/api/files/:id/download` | Download a file               | Authenticated |
+| GET    | `/api/audit-logs`         | Read account and share activity | Authenticated |
+| POST   | `/api/files/:id/security-analysis` | Analyze an existing file | Authenticated |
 | DELETE | `/api/files/:id`          | Delete a file                 | Authenticated |
 | POST   | `/api/share/:fileId`      | Create a share link           | Authenticated |
 | DELETE | `/api/share/:shareId`     | Revoke a share link           | Authenticated |
@@ -107,6 +112,18 @@ The production web app is served by Vercel at `https://secure-share-lime.vercel.
 Protected requests use `Authorization: Bearer <jwt-token>`.
 
 More detail is available in [`docs/`](docs/), especially [`docs/api/api-specification.md`](docs/api/api-specification.md).
+
+## Security analysis and audit activity
+
+Every upload is checked before encryption using extension validation, file signatures, and advisory
+header heuristics. The analysis looks for executable headers, suspicious double extensions, active
+content patterns, and risky PDF actions. A warning does not prove that a file is malicious, and a
+clean result is not a guarantee that a file is safe; users should still use endpoint antivirus and
+avoid opening untrusted files.
+
+The Audit activity view is limited to the signed-in user’s own events plus anonymous access events
+for links they own. It records the action, result, timestamp, file or link, IP address, and browser
+signature. Secrets, passwords, and share tokens are redacted or never stored in audit details.
 
 ## Quality checks
 
