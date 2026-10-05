@@ -4,4 +4,5 @@ export const appRoutes = [
   { name: 'Shared links', icon: 'share', path: '/shared-links' },
   { name: 'Audit activity', icon: 'activity', path: '/audit' },
   { name: 'Settings', icon: 'settings', path: '/settings' },
+  { name: 'Admin dashboard', icon: 'shield', path: '/admin' },
 ];

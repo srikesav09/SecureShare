@@ -14,6 +14,8 @@ SecureShare is a private file-sharing platform. Authenticated users can upload f
 - MongoDB persistence and AWS S3 file storage.
 - Encryption, rate limiting, security headers, request IDs, CORS restrictions, and centralized errors.
 - Responsive React UI with Overview, My files, Shared links, and Settings views.
+- Admin dashboard with vault metrics, security activity, and quarantine review.
+- Server-side session and device management with session revocation.
 
 ## Technology
 
@@ -124,6 +126,15 @@ avoid opening untrusted files.
 The Audit activity view is limited to the signed-in user’s own events plus anonymous access events
 for links they own. It records the action, result, timestamp, file or link, IP address, and browser
 signature. Secrets, passwords, and share tokens are redacted or never stored in audit details.
+
+High-risk findings are placed in quarantine. Quarantined files cannot be previewed, downloaded, or
+shared until an administrator releases them from the Admin dashboard. This is a release gate around
+the current advisory analyzer; deploy ClamAV/YARA or another malware engine alongside it for a full
+malware verdict.
+
+Admin endpoints include `GET /api/admin/dashboard`, `GET /api/admin/quarantine`, and
+`POST /api/admin/quarantine/:fileId/release`. Session endpoints include `GET /api/auth/sessions`,
+`POST /api/auth/logout`, and `DELETE /api/auth/sessions/others`.
 
 ## Quality checks
 

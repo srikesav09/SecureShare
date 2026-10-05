@@ -52,7 +52,7 @@ const fileSchema = new mongoose.Schema(
     securityAnalysis: {
       status: {
         type: String,
-        enum: ['CLEAN', 'REVIEW', 'BLOCKED'],
+        enum: ['CLEAN', 'REVIEW', 'QUARANTINED', 'RELEASED', 'BLOCKED'],
         default: 'CLEAN',
       },
       riskScore: {
@@ -84,6 +84,8 @@ const fileSchema = new mongoose.Schema(
         type: String,
         default: 'SecureShare header heuristics',
       },
+      releasedAt: { type: Date, default: null },
+      releasedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     },
   },
   {

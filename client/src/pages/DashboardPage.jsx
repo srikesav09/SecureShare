@@ -6,6 +6,7 @@ import { Brand } from '../components/Brand';
 import Icon from '../components/Icon';
 import FileList from '../components/FileList';
 import { formatBytes } from '../services/formatters';
+import AdminDashboard from './AdminDashboard';
 
 function ShareModal({ target, onClose, onCreated, notify }) {
   const [options, setOptions] = useState({ maxDownloads: '', password: '', expiresInHours: '24' });
@@ -251,6 +252,7 @@ function DashboardPage({ user, onLogout }) {
   });
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [sessions, setSessions] = useState([]);
   const active = appRoutes.find((item) => item.path === location.pathname)?.name || 'Overview';
 
   const loadFiles = useCallback(async () => {
@@ -265,6 +267,15 @@ function DashboardPage({ user, onLogout }) {
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
+
+  useEffect(() => {
+    if (active !== 'Settings') return undefined;
+    api
+      .get('/api/auth/sessions')
+      .then(({ data }) => setSessions(data.data || []))
+      .catch(() => notify('Could not load sessions'));
+    return undefined;
+  }, [active, notify]);
 
   useEffect(() => {
     if (active !== 'Audit activity') return undefined;
@@ -286,7 +297,7 @@ function DashboardPage({ user, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [active]);
+  }, [active, notify]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -303,10 +314,10 @@ function DashboardPage({ user, onLogout }) {
     };
   }, [previewState]);
 
-  const notify = (message) => {
+  const notify = useCallback((message) => {
     setToast(message);
     window.setTimeout(() => setToast(''), 4000);
-  };
+  }, []);
 
   const upload = async (file) => {
     if (!file) return;
@@ -422,6 +433,26 @@ function DashboardPage({ user, onLogout }) {
     }
   };
 
+  const revokeOtherSessions = async () => {
+    try {
+      await api.delete('/api/auth/sessions/others');
+      setSessions((current) => current.filter((session) => session.current));
+      notify('Other sessions revoked');
+    } catch (error) {
+      notify(error.response?.data?.message || 'Could not revoke sessions');
+    }
+  };
+
+  const revokeSession = async (sessionId) => {
+    try {
+      await api.delete(`/api/auth/sessions/${sessionId}`);
+      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      notify('Session revoked');
+    } catch (error) {
+      notify(error.response?.data?.message || 'Could not revoke session');
+    }
+  };
+
   const importSharedFile = async (event) => {
     event.preventDefault();
     setImportState({ loading: true, message: '', success: false });
@@ -464,16 +495,18 @@ function DashboardPage({ user, onLogout }) {
       <aside className="sidebar">
         <Brand />
         <nav>
-          {appRoutes.map((item) => (
-            <button
-              key={item.name}
-              className={active === item.name ? 'nav-item active' : 'nav-item'}
-              onClick={() => navigate(item.path)}
-            >
-              <Icon name={item.icon} />
-              {item.name}
-            </button>
-          ))}
+          {appRoutes
+            .filter((item) => item.path !== '/admin' || user?.role === 'ADMIN')
+            .map((item) => (
+              <button
+                key={item.name}
+                className={active === item.name ? 'nav-item active' : 'nav-item'}
+                onClick={() => navigate(item.path)}
+              >
+                <Icon name={item.icon} />
+                {item.name}
+              </button>
+            ))}
         </nav>
       </aside>
       <section className="workspace">
@@ -567,7 +600,9 @@ function DashboardPage({ user, onLogout }) {
             hidden
             onChange={(event) => upload(event.target.files?.[0])}
           />
-          {active === 'My files' ? (
+          {active === 'Admin dashboard' && user?.role === 'ADMIN' ? (
+            <AdminDashboard notify={notify} />
+          ) : active === 'My files' ? (
             <section className="panel page-panel">
               <div className="panel-heading">
                 <div>
@@ -813,6 +848,43 @@ function DashboardPage({ user, onLogout }) {
                     {passwordState.loading ? 'Updating…' : 'Update password'}
                   </button>
                 </form>
+              </div>
+              <div className="panel settings-card security-settings">
+                <span className="settings-icon">
+                  <Icon name="shield" size={22} />
+                </span>
+                <div className="settings-card-heading">
+                  <div>
+                    <h2>Sessions and devices</h2>
+                    <p>
+                      Review where your account is signed in and revoke access you do not recognize.
+                    </p>
+                  </div>
+                  <button className="secondary-button" onClick={revokeOtherSessions}>
+                    Sign out other devices
+                  </button>
+                </div>
+                <div className="session-list">
+                  {sessions.map((session) => (
+                    <div className="session-row" key={session.id}>
+                      <Icon name="activity" size={18} />
+                      <div>
+                        <strong>{session.device}</strong>
+                        <small>
+                          {session.ipAddress || 'Unknown IP'} · Last active{' '}
+                          {new Date(session.lastSeenAt).toLocaleString()}
+                        </small>
+                      </div>
+                      {session.current ? (
+                        <span className="status-chip">This device</span>
+                      ) : (
+                        <button className="text-button" onClick={() => revokeSession(session.id)}>
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           ) : (

@@ -66,6 +66,10 @@ export const saveFile = async (req, file, user) => {
       size: file.size,
     });
 
+    if (securityAnalysis.status === 'REVIEW') {
+      securityAnalysis.status = 'QUARANTINED';
+    }
+
     encryption = encryptFile(file.path);
 
     s3Key = `files/${user.id}/${file.filename}.enc`;
@@ -251,6 +255,10 @@ export const downloadFileService = async (req, fileId, userId) => {
     throw new AppError('Access denied', 403);
   }
 
+  if (file.securityAnalysis?.status === 'QUARANTINED') {
+    throw new AppError('This file is quarantined pending an administrator security review', 423);
+  }
+
   let encryptedBuffer;
 
   try {
@@ -296,6 +304,53 @@ export const downloadFileService = async (req, fileId, userId) => {
 
     buffer: decrypted,
   };
+};
+
+export const getQuarantinedFiles = async () => {
+  const files = await File.find({ 'securityAnalysis.status': 'QUARANTINED' })
+    .populate('owner', 'name email')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return files.map((file) => ({
+    id: file._id,
+    originalName: file.originalName,
+    size: file.size,
+    mimeType: file.mimeType,
+    createdAt: file.createdAt,
+    owner: file.owner,
+    securityAnalysis: file.securityAnalysis,
+  }));
+};
+
+export const releaseQuarantinedFile = async (req, fileId, adminId) => {
+  if (!mongoose.isValidObjectId(fileId)) throw new AppError('Invalid file ID', 400);
+
+  const file = await File.findOneAndUpdate(
+    { _id: fileId, 'securityAnalysis.status': 'QUARANTINED' },
+    {
+      $set: {
+        'securityAnalysis.status': 'RELEASED',
+        'securityAnalysis.releasedAt': new Date(),
+        'securityAnalysis.releasedBy': adminId,
+      },
+    },
+    { new: true },
+  );
+
+  if (!file) throw new AppError('Quarantined file not found', 404);
+
+  await createAuditLog({
+    req,
+    user: adminId,
+    action: AUDIT_ACTIONS.RELEASE_QUARANTINED_FILE,
+    resourceType: RESOURCE_TYPES.FILE,
+    resourceId: file._id,
+    status: AUDIT_STATUS.SUCCESS,
+    details: { filename: file.originalName },
+  });
+
+  return { success: true, message: 'File released from quarantine' };
 };
 
 export const deleteFileService = async (req, fileId, userId) => {
