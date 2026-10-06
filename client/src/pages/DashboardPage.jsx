@@ -176,7 +176,8 @@ function PreviewModal({ file, url, onClose, onDownload }) {
 
 function SecurityModal({ file, onClose }) {
   const analysis = file.securityAnalysis;
-  const isClean = analysis?.status === 'CLEAN';
+  const malwareScan = analysis?.malwareScan;
+  const isClean = analysis?.status === 'CLEAN' && malwareScan?.status !== 'INFECTED';
 
   return (
     <div
@@ -193,13 +194,21 @@ function SecurityModal({ file, onClose }) {
         </span>
         <h2>Security analysis</h2>
         <p className="security-summary">
-          <strong>{file.originalName}</strong> was checked with SecureShare header heuristics. This
-          is an advisory scan, not a replacement for antivirus software.
+          <strong>{file.originalName}</strong> was checked with SecureShare heuristics and ClamAV.
+          {malwareScan?.status === 'SKIPPED'
+            ? ' ClamAV was unavailable when this file was uploaded.'
+            : ' This is an advisory scan, not a replacement for endpoint protection.'}
         </p>
         <div className={`security-result ${isClean ? 'clean' : 'review'}`}>
           <strong>{isClean ? 'No known header risks found' : 'Review recommended'}</strong>
           <span>Risk score: {analysis?.riskScore ?? 0}/100</span>
         </div>
+        {malwareScan && (
+          <p className="security-summary">
+            Malware scan: <strong>{malwareScan.status}</strong>
+            {malwareScan.engine ? ` (${malwareScan.engine})` : ''}
+          </p>
+        )}
         {analysis?.findings?.length ? (
           <div className="security-findings">
             {analysis.findings.map((finding) => (
