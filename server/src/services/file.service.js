@@ -19,6 +19,7 @@ import { AUDIT_ACTIONS, AUDIT_STATUS, RESOURCE_TYPES } from '../utils/constants.
 
 import { uploadToS3, downloadFromS3, deleteFromS3 } from './s3.service.js';
 import { analyzeBuffer, analyzeFile } from './file-security.service.js';
+import { scanFileWithClamAV } from './clamav.service.js';
 
 const sanitizeFile = (file) => {
   if (!file) {
@@ -59,12 +60,36 @@ export const saveFile = async (req, file, user) => {
 
     const hash = generateHash(file.path);
 
-    const securityAnalysis = analyzeFile({
-      filePath: file.path,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-    });
+    const malwareScan = await scanFileWithClamAV(file.path);
+
+    if (malwareScan.status === 'INFECTED') {
+      await createAuditLog({
+        req,
+        user: user.id,
+        action: AUDIT_ACTIONS.MALWARE_DETECTED,
+        resourceType: RESOURCE_TYPES.FILE,
+        status: AUDIT_STATUS.FAILED,
+        details: {
+          filename: file.originalname,
+          signature: malwareScan.signature,
+        },
+      });
+
+      throw new AppError('Upload rejected: malware detected by ClamAV', 422);
+    }
+
+    const securityAnalysis = {
+      ...analyzeFile({
+        filePath: file.path,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+      }),
+      malwareScan: {
+        ...malwareScan,
+        checkedAt: new Date(),
+      },
+    };
 
     encryption = encryptFile(file.path);
 
@@ -138,6 +163,14 @@ export const saveFile = async (req, file, user) => {
       data: sanitizeFile(uploadedFile),
     };
   } catch (error) {
+    if (file?.path && fs.existsSync(file.path)) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (cleanupError) {
+        console.error('Uploaded file cleanup failed:', cleanupError.message);
+      }
+    }
+
     if (encryption?.encryptedPath && fs.existsSync(encryption.encryptedPath)) {
       try {
         fs.unlinkSync(encryption.encryptedPath);

@@ -84,6 +84,17 @@ const fileSchema = new mongoose.Schema(
         type: String,
         default: 'SecureShare header heuristics',
       },
+      malwareScan: {
+        status: {
+          type: String,
+          enum: ['CLEAN', 'INFECTED', 'SKIPPED', 'ERROR'],
+          default: 'SKIPPED',
+        },
+        engine: String,
+        signature: String,
+        reason: String,
+        checkedAt: Date,
+      },
     },
   },
   {
