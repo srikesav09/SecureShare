@@ -164,4 +164,4 @@ Read [`SECURITY.md`](SECURITY.md) for reporting guidance and [`docs/security/`](
 
 ## License
 
-See [`LICENSE`](LICENSE).
+See [`LICENSE.md`](LICENSE.md).
