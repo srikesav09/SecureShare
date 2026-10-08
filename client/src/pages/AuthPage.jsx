@@ -22,7 +22,7 @@ function AuthPage({ onAuthenticated }) {
         setMode('login');
         setState({
           loading: false,
-          message: 'Account created. Sign in to continue.',
+          message: 'Account created. Sign-in to continue.',
           success: true,
         });
       }
@@ -64,7 +64,7 @@ function AuthPage({ onAuthenticated }) {
       <section className="auth-panel">
         <div className="auth-card">
           <div className="auth-heading">
-            <span className="eyebrow">WELCOME BACK</span>
+            <span className="eyebrow">WELCOME BACK!</span>
             <h2>{mode === 'login' ? 'Sign in to your vault' : 'Create your vault'}</h2>
             <p>
               {mode === 'login'
